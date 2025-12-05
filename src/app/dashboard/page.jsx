@@ -452,14 +452,11 @@
 
 
 
-
-
 'use client'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import banner from '../../../assets/ban.png';
-
 
 export default function DashboardPage() {
   const [user, setUser] = useState(null)
@@ -545,6 +542,10 @@ export default function DashboardPage() {
       const formattedDate = date.toISOString().split('T')[0]
       const monthKey = `${year}-${String(month + 1).padStart(2, '0')}`
       
+      // Generate random paid members data for historical months
+      const paidMembers = Math.floor(Math.random() * 5) + 1
+      const totalMembers = 5
+      
       const totalCollected = Math.floor(Math.random() * 50000) + 50000
       const totalGiven = Math.floor(Math.random() * 40000) + 40000
       const remainingAmount = totalCollected - totalGiven
@@ -558,7 +559,9 @@ export default function DashboardPage() {
         totalGiven: totalGiven,
         remainingAmount: remainingAmount,
         status: 'upcoming',
-        monthKey: monthKey
+        monthKey: monthKey,
+        paidMembers: paidMembers,
+        totalMembers: totalMembers
       })
     }
     
@@ -641,7 +644,12 @@ export default function DashboardPage() {
     setExpandedHistoryYear(expandedHistoryYear === year ? null : year)
   }
 
-  // Remove the completion badge function since we don't want completed status
+  const handleHistoryMonthClick = (monthData) => {
+    // For historical months, we can still navigate but show a read-only view
+    router.push(`/month/${monthData.date}?name=${encodeURIComponent(monthData.name)}&year=${monthData.year}&historical=true`)
+  }
+
+  // Updated payment status badge function for all months
   const getPaymentStatusBadge = (month) => {
     if (month.paidMembers > 0) {
       return (
@@ -650,7 +658,11 @@ export default function DashboardPage() {
         </span>
       )
     }
-    return null
+    return (
+      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+        No payments
+      </span>
+    )
   }
 
   if (!user) {
@@ -684,7 +696,7 @@ export default function DashboardPage() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-         {/* Banner Section - Centered and properly sized */}
+        {/* Banner Section */}
         <div className="mb-8">
           <div className="bg-white rounded-lg shadow-md overflow-hidden">
             <img
@@ -694,7 +706,6 @@ export default function DashboardPage() {
             />
           </div>
         </div>
-
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <div className="bg-white rounded-lg shadow-md p-6 text-center">
@@ -746,7 +757,6 @@ export default function DashboardPage() {
                 >
                   <div className="flex justify-between items-start mb-3">
                     <h3 className="font-semibold text-gray-800 text-lg">{month.name} {month.year}</h3>
-                    {/* Only show payment status badge, no completed badge */}
                     {getPaymentStatusBadge(month)}
                   </div>
                   
@@ -768,7 +778,7 @@ export default function DashboardPage() {
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-600">Remaining Amount:</span>
                       <span className={`font-medium ${getAmountColor(month.remainingAmount)}`}>
-                         ₹ {formatNumber(month.remainingAmount)}
+                        ₹ {formatNumber(month.remainingAmount)}
                       </span>
                     </div>
                   </div>
@@ -788,7 +798,7 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Rest of the financial history section remains the same */}
+          {/* Financial History Section - Updated to match current year cards */}
           <div>
             <h3 className="text-lg font-semibold text-gray-700 mb-4">Financial History</h3>
             <div className="space-y-4">
@@ -813,44 +823,65 @@ export default function DashboardPage() {
                   
                   {expandedHistoryYear === year && (
                     <div className="p-4 border-t border-gray-200">
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-6">
                         {yearData.data.map((month) => (
-                          <div key={month.id} className="border border-gray-200 rounded-lg p-4">
-                            <h5 className="font-semibold text-gray-800 mb-2">{month.name}</h5>
-                            <div className="space-y-2 text-sm">
-                              <div className="flex justify-between">
-                                <span>Collected:</span>
-                                <span className="font-medium">₹ {formatNumber(month.totalCollected)}</span>
+                          <div 
+                            key={month.id}
+                            onClick={() => handleHistoryMonthClick(month)}
+                            className="border border-gray-200 rounded-lg p-4 hover:shadow-lg hover:border-blue-300 transition-all cursor-pointer"
+                          >
+                            <div className="flex justify-between items-start mb-3">
+                              <h3 className="font-semibold text-gray-800 text-lg">{month.name} {month.year}</h3>
+                              {getPaymentStatusBadge(month)}
+                            </div>
+                            
+                            <div className="space-y-3">
+                              <div className="flex justify-between text-sm">
+                                <span className="text-gray-600">Total Collected:</span>
+                                <span className="font-medium text-green-600">
+                                  ₹ {formatNumber(month.totalCollected)}
+                                </span>
                               </div>
-                              <div className="flex justify-between">
-                                <span>Given:</span>
-                                <span className="font-medium">₹ {formatNumber(month.totalGiven)}</span>
+                              
+                              <div className="flex justify-between text-sm">
+                                <span className="text-gray-600">Total Given:</span>
+                                <span className="font-medium text-blue-600">
+                                  ₹ {formatNumber(month.totalGiven)}
+                                </span>
                               </div>
-                              <div className="flex justify-between">
-                                <span>Remaining:</span>
+                              
+                              <div className="flex justify-between text-sm">
+                                <span className="text-gray-600">Remaining Amount:</span>
                                 <span className={`font-medium ${getAmountColor(month.remainingAmount)}`}>
                                   ₹ {formatNumber(month.remainingAmount)}
                                 </span>
                               </div>
                             </div>
+                            
+                            <div className="mt-4 pt-3 border-t border-gray-100">
+                              <button className="w-full bg-gray-600 text-white py-2 px-3 rounded-md text-sm hover:bg-gray-700 transition-colors">
+                                View Details
+                              </button>
+                            </div>
                           </div>
                         ))}
                       </div>
                       
+                      {/* Year Summary - Matching the style but updated for history */}
                       <div className="mt-4 p-4 bg-gray-50 rounded-lg">
                         <h5 className="font-semibold text-gray-800 mb-2">Year Summary</h5>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                          <div className="text-center">
-                            <div className="text-gray-600">Total Collected</div>
-                            <div className="font-semibold text-green-600">₹ {formatNumber(yearData.summary.totalCollected)}</div>
+                          <div className="text-center p-3 bg-white rounded border border-gray-200">
+                            <div className="text-gray-600 mb-1">Total Collected</div>
+                            <div className="font-semibold text-lg text-green-600">₹ {formatNumber(yearData.summary.totalCollected)}</div>
                           </div>
-                          <div className="text-center">
-                            <div className="text-gray-600">Total Given</div>
-                            <div className="font-semibold text-blue-600">₹ {formatNumber(yearData.summary.totalGiven)}</div>
+                          <div className="text-center p-3 bg-white rounded border border-gray-200">
+                            <div className="text-gray-600 mb-1">Total Given</div>
+                            <div className="font-semibold text-lg text-blue-600">₹ {formatNumber(yearData.summary.totalGiven)}</div>
                           </div>
-                          <div className="text-center">
-                            <div className="text-gray-600">Net Balance</div>
-                            <div className={`font-semibold ${getAmountColor(yearData.summary.remainingAmount)}`}>
+                          <div className="text-center p-3 bg-white rounded border border-gray-200">
+                            <div className="text-gray-600 mb-1">Net Balance</div>
+                            <div className={`font-semibold text-lg ${getAmountColor(yearData.summary.remainingAmount)}`}>
                               ₹ {formatNumber(yearData.summary.remainingAmount)}
                             </div>
                           </div>

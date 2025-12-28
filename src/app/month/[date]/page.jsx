@@ -32,7 +32,7 @@
 //   const year = searchParams?.get('year') || ''
 //   const { date } = useParams()
 
-//   // Constants
+//   // Constantsnpm i 
 //   const SHARE_AMOUNT = 1000
 //   const INTEREST_RATE = 3
 //   const PENALTY_RATE = 2
@@ -1122,6 +1122,7 @@ export default function MonthDetailsPage() {
   const [monthLoans, setMonthLoans] = useState({})
   const [showPaymentMode, setShowPaymentMode] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false)
 
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -1206,7 +1207,6 @@ export default function MonthDetailsPage() {
   // Helper Functions
   const hasMemberPaid = (member) => !!monthPayments[member._id || member.id]?.paid
 
-  // Get member's principal at start of month (before any loans this month)
   const getPrincipalBeforeMonthLoans = (member) => {
     const memberId = member._id || member.id
     const currentPrincipal = member.currentPrincipal || 0
@@ -1214,13 +1214,11 @@ export default function MonthDetailsPage() {
     return Math.max(0, currentPrincipal - totalBorrowedThisMonth)
   }
 
-  // Get total amount borrowed in current month
   const getTotalBorrowingThisMonth = (memberId) => {
     if (!monthLoans[memberId]) return 0
     return monthLoans[memberId].reduce((sum, loan) => sum + (loan.amount || 0), 0)
   }
 
-  // Get member's current principal including this month's loans
   const getCurrentPrincipalWithMonthLoans = (member) => {
     const memberId = member._id || member.id
     const principalBeforeLoans = getPrincipalBeforeMonthLoans(member)
@@ -1270,7 +1268,6 @@ export default function MonthDetailsPage() {
     const totalBorrowedThisMonth = getTotalBorrowingThisMonth(memberId)
     const currentPrincipalWithLoans = principalBeforeLoans + totalBorrowedThisMonth
     
-    // Interest is calculated on current principal (including this month's loans) minus muddal payment
     const principalAfterMuddal = Math.max(0, currentPrincipalWithLoans - muddalPaid)
     const interestAmount = Math.round(principalAfterMuddal * (INTEREST_RATE / 100))
     const totalCompulsory = SHARE_AMOUNT + interestAmount
@@ -1318,6 +1315,410 @@ export default function MonthDetailsPage() {
     }
     return penalty
   }
+
+  // ==================== PDF GENERATION CODE ====================
+  
+  const generateCollectionPDFPages = () => {
+    const memberChunks = chunkMembers(members, 30)
+    const currentDate = getCurrentDate()
+    
+    return memberChunks.map((chunk, pageIndex) => `
+      <div class="pdf-page ${pageIndex < memberChunks.length - 1 ? 'page-break' : ''}">
+        <div class="pdf-header">
+          <div class="header-content">
+            <div class="header-text">
+              <h1>शिवांजली फंड - संकलन अहवाल</h1>
+              <p class="subtitle">महिना: ${monthData.monthName} ${monthData.year}</p>
+              <p class="subtitle">तारीख: ${currentDate}</p>
+            </div>
+            <div style="text-align: right;">
+              <div style="font-size: 12px; font-weight: bold;">पृष्ठ ${pageIndex + 1} / ${memberChunks.length}</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="summary-grid">
+          <div class="summary-item">
+            <div class="summary-label">एकूण भाग रक्कम</div>
+            <div class="summary-value">₹${monthStats.totalShareCollection.toLocaleString()}</div>
+          </div>
+          <div class="summary-item">
+            <div class="summary-label">एकूण व्याज</div>
+            <div class="summary-value">₹${monthStats.totalInterest.toLocaleString()}</div>
+          </div>
+          <div class="summary-item">
+            <div class="summary-label">एकूण दंड</div>
+            <div class="summary-value">₹${monthStats.totalPenalties.toLocaleString()}</div>
+          </div>
+          <div class="summary-item">
+            <div class="summary-label">एकूण संकलित</div>
+            <div class="summary-value" style="color: #059669;">₹${monthStats.totalPaid.toLocaleString()}</div>
+          </div>
+        </div>
+
+        <table class="pdf-table">
+          <thead>
+            <tr>
+              <th width="5%">सभा. क्र</th>
+              <th width="15%">भागधारकाचे नाव</th>
+              <th width="6%">भाग रक्कम</th>
+              <th width="8%">कर्ज</th>
+              <th width="8%">मुद्दल</th>
+              <th width="8%">व्याज</th>
+              <th width="8%">दंड</th>
+              <th width="8%">एकूण</th>
+              <th width="10%">शिल्लक कर्ज</th>
+              <th width="6%">स्थिती</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${chunk.map((member) => {
+              const memberId = member._id || member.id
+              const isPaid = hasMemberPaid(member)
+              const paymentDetails = calculatePaymentDetails(member)
+              const penaltyAmount = isPaid 
+                ? (monthPayments[memberId]?.calculatedPenalty || monthPayments[memberId]?.penaltyAmount || 0) 
+                : calculatePenalty(member)
+              const totalAmount = isPaid 
+                ? (monthPayments[memberId]?.calculatedTotal || monthPayments[memberId]?.paidAmount || 0) 
+                : paymentDetails.total + penaltyAmount
+              const muddalPaid = isPaid 
+                ? (monthPayments[memberId]?.calculatedMuddal || monthPayments[memberId]?.muddalPaid || 0) 
+                : 0
+              const paymentMode = monthPayments[memberId]?.paymentMode
+              
+              return `
+                <tr class="${isPaid ? 'paid-row' : ''}">
+                  <td>${member.serialNo}</td>
+                  <td style="text-align: left; padding-left: 8px;">
+                    <div style="font-weight: bold;">${member.name}</div>
+                    <div style="font-size: 8px; color: #64748b;">${member.phone}</div>
+                  </td>
+                  <td>₹${SHARE_AMOUNT}</td>
+                  <td>${member.isBorrower || paymentDetails.totalBorrowedThisMonth > 0 ? `₹${paymentDetails.principalBeforeLoans.toLocaleString()}` : '-'}</td>
+                  <td>${muddalPaid > 0 ? `₹${muddalPaid.toLocaleString()}` : (isPaid ? '0' : '0')}</td>
+                  <td>${member.isBorrower || paymentDetails.totalBorrowedThisMonth > 0 ? `₹${paymentDetails.interestAmount.toLocaleString()}` : '-'}</td>
+                  <td>${penaltyAmount > 0 ? `₹${penaltyAmount.toLocaleString()}` : '-'}</td>
+                  <td style="font-weight: bold;">₹${totalAmount.toLocaleString()}</td>
+                  <td>${member.isBorrower || paymentDetails.totalBorrowedThisMonth > 0 ? `₹${paymentDetails.newPrincipal.toLocaleString()}` : '-'}</td>
+                  <td>
+                    <span style="
+                      display: inline-block;
+                      padding: 2px 6px;
+                      border-radius: 10px;
+                      font-size: 8px;
+                      font-weight: bold;
+                      ${isPaid ? 
+                        (paymentMode === 'cash' ? 'background: #dcfce7; color: #166534;' : 
+                         paymentMode === 'online' ? 'background: #dbeafe; color: #1e40af;' : 
+                         'background: #dcfce7; color: #166534;') 
+                        : 'background: #fef3c7; color: #92400e;'}
+                    ">
+                      ${isPaid ? (paymentMode === 'cash' ? 'C' : paymentMode === 'online' ? 'O' : 'C') : 'Pending'}
+                    </span>
+                  </td>
+                </tr>
+              `
+            }).join('')}
+          </tbody>
+        </table>
+
+        <div class="page-number">
+          पृष्ठ ${pageIndex + 1} / ${memberChunks.length}
+        </div>
+      </div>
+    `).join('')
+  }
+
+  const generateBorrowingPDFPages = () => {
+    const membersWithLoans = getMembersWithMonthLoans
+    const memberChunks = chunkMembers(membersWithLoans, 30)
+    const currentDate = getCurrentDate()
+    
+    if (membersWithLoans.length === 0) {
+      return `
+        <div class="pdf-page">
+          <div class="pdf-header">
+            <div class="header-content">
+              <div class="header-text">
+                <h1>शिवांजली फंड - कर्ज अहवाल</h1>
+                <p class="subtitle">महिना: ${monthData.monthName} ${monthData.year}</p>
+                <p class="subtitle">तारीख: ${currentDate}</p>
+              </div>
+            </div>
+          </div>
+          <div style="text-align: center; padding: 50px;">
+            <h3>${monthData.monthName} ${monthData.year} या महिन्यासाठी कोणतेही कर्ज प्रक्रियेस नाही</h3>
+          </div>
+        </div>
+      `
+    }
+    
+    return memberChunks.map((chunk, pageIndex) => `
+      <div class="pdf-page ${pageIndex < memberChunks.length - 1 ? 'page-break' : ''}">
+        <div class="pdf-header">
+          <div class="header-content">
+            <div class="header-text">
+              <h1>शिवांजली फंड - कर्ज अहवाल</h1>
+              <p class="subtitle">महिना: ${monthData.monthName} ${monthData.year}</p>
+              <p class="subtitle">तारीख: ${currentDate}</p>
+            </div>
+            <div style="text-align: right;">
+              <div style="font-size: 12px; font-weight: bold;">पृष्ठ ${pageIndex + 1} / ${memberChunks.length}</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="summary-grid">
+          <div class="summary-item">
+            <div class="summary-label">या महिन्यातील एकूण कर्ज</div>
+            <div class="summary-value">₹${monthStats.totalBorrowedThisMonth.toLocaleString()}</div>
+          </div>
+          <div class="summary-item">
+            <div class="summary-label">एकूण कर्जदार</div>
+            <div class="summary-value">${membersWithLoans.length}</div>
+          </div>
+          <div class="summary-item">
+            <div class="summary-label">नवीन कर्जदार</div>
+            <div class="summary-value">${membersWithLoans.filter(m => !m.isBorrower || m.loanHistory?.length === 1).length}</div>
+          </div>
+          <div class="summary-item">
+            <div class="summary-label">नवीन कर्ज शिल्लक</div>
+            <div class="summary-value">₹${monthStats.totalPrincipal.toLocaleString()}</div>
+          </div>
+        </div>
+
+        <table class="pdf-table">
+          <thead>
+            <tr>
+              <th width="5%">सभा. क्र</th>
+              <th width="20%">भागधारकाचे नाव</th>
+              <th width="15%">मागील कर्ज</th>
+              <th width="15%">यावेळी घेतलेले कर्ज</th>
+              <th width="25%">जामीन</th>
+              <th width="20%">नवीन कर्ज शिल्लक</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${chunk.map((member) => {
+              const memberId = member._id || member.id
+              const totalBorrowingThisMonth = getTotalBorrowingThisMonth(memberId)
+              const previousPrincipal = getPreviousPrincipal(member)
+              const allGuarantors = getAllGuarantorsThisMonth(memberId)
+              
+              return `
+                <tr>
+                  <td>${member.serialNo}</td>
+                  <td style="text-align: left; padding-left: 8px;">
+                    <div style="font-weight: bold;">${member.name}</div>
+                    <div style="font-size: 8px; color: #64748b;">${member.phone}</div>
+                  </td>
+                  <td>₹${previousPrincipal.toLocaleString()}</td>
+                  <td style="font-weight: bold; color: #059669;">₹${totalBorrowingThisMonth.toLocaleString()}</td>
+                  <td style="text-align: left; padding-left: 8px;">
+                    ${allGuarantors.length > 0 ? 
+                      allGuarantors.map(guarantor => 
+                        `<div style="font-size: 8px; color: #1d4ed8;">${guarantor}</div>`
+                      ).join('') 
+                      : '<div style="font-size: 8px; color: #64748b;">जामीन नाही</div>'
+                    }
+                  </td>
+                  <td>₹${member.currentPrincipal?.toLocaleString()}</td>
+                </tr>
+              `
+            }).join('')}
+          </tbody>
+        </table>
+
+        <div class="page-number">
+          पृष्ठ ${pageIndex + 1} / ${memberChunks.length}
+        </div>
+      </div>
+    `).join('')
+  }
+
+  const chunkMembers = (members, chunkSize) => {
+    const chunks = []
+    for (let i = 0; i < members.length; i += chunkSize) {
+      chunks.push(members.slice(i, i + chunkSize))
+    }
+    return chunks
+  }
+
+  const getCurrentDate = () => {
+    const now = new Date()
+    const day = String(now.getDate()).padStart(2, '0')
+    const month = now.toLocaleString('default', { month: 'long' })
+    const year = now.getFullYear()
+    return `${day} ${month} ${year}`
+  }
+
+  const exportToPDF = async (tableType = 'collection') => {
+    setIsGeneratingPDF(true)
+    
+    try {
+      const pdfFrame = document.createElement('iframe')
+      pdfFrame.style.display = 'none'
+      document.body.appendChild(pdfFrame)
+      
+      const pdfWindow = pdfFrame.contentWindow
+      const pdfDocument = pdfWindow.document
+      
+      const pdfContent = tableType === 'collection' 
+        ? generateCollectionPDFPages() 
+        : generateBorrowingPDFPages()
+      
+      pdfDocument.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>शिवांजली फंड - ${monthData.monthName} ${monthData.year}</title>
+          <style>
+            @page {
+              size: A4 landscape;
+              margin: 0.5cm;
+            }
+            
+            body {
+              font-family: 'Arial', sans-serif;
+              margin: 0;
+              padding: 0;
+              background: white;
+              -webkit-print-color-adjust: exact;
+              print-color-adjust: exact;
+            }
+            
+            .pdf-container {
+              width: 100%;
+              margin: 0;
+              padding: 0;
+            }
+            
+            .pdf-header {
+              background: #f8fafc;
+              padding: 15px;
+              border-bottom: 2px solid #e2e8f0;
+              margin-bottom: 15px;
+            }
+            
+            .header-content {
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+            }
+            
+            .header-text {
+              text-align: center;
+              flex-grow: 1;
+              margin: 0 20px;
+            }
+            
+            .header-text h1 {
+              margin: 0;
+              font-size: 20px;
+              color: #1e293b;
+            }
+            
+            .header-text .subtitle {
+              margin: 5px 0 0 0;
+              font-size: 14px;
+              color: #64748b;
+            }
+            
+            .summary-grid {
+              display: grid;
+              grid-template-columns: repeat(4, 1fr);
+              gap: 8px;
+              margin-bottom: 15px;
+            }
+            
+            .summary-item {
+              border: 1px solid #cbd5e1;
+              padding: 8px;
+              text-align: center;
+              border-radius: 4px;
+            }
+            
+            .summary-label {
+              font-size: 10px;
+              font-weight: bold;
+              color: #475569;
+            }
+            
+            .summary-value {
+              font-size: 12px;
+              font-weight: bold;
+              color: #1e293b;
+            }
+            
+            .pdf-table {
+              width: 100%;
+              border-collapse: collapse;
+              font-size: 9px;
+              margin-bottom: 20px;
+              table-layout: fixed;
+            }
+            
+            .pdf-table th {
+              background: #f1f5f9;
+              border: 1px solid #cbd5e1;
+              padding: 6px 4px;
+              text-align: center;
+              font-weight: bold;
+              color: #475569;
+              overflow: hidden;
+              text-overflow: ellipsis;
+            }
+            
+            .pdf-table td {
+              border: 1px solid #cbd5e1;
+              padding: 5px 3px;
+              text-align: center;
+              overflow: hidden;
+              text-overflow: ellipsis;
+            }
+            
+            .paid-row {
+              background: #f0fdf4 !important;
+            }
+            
+            .page-number {
+              text-align: center;
+              font-size: 10px;
+              color: #64748b;
+              margin-top: 10px;
+            }
+            
+            .page-break {
+              page-break-after: always;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="pdf-container">
+            ${pdfContent}
+          </div>
+        </body>
+        </html>
+      `)
+      
+      await new Promise(resolve => setTimeout(resolve, 500))
+      
+      pdfWindow.print()
+      
+      setTimeout(() => {
+        document.body.removeChild(pdfFrame)
+        setIsGeneratingPDF(false)
+      }, 1000)
+      
+    } catch (error) {
+      console.error('PDF generation failed:', error)
+      setIsGeneratingPDF(false)
+      alert('PDF generation failed. Please try again.')
+    }
+  }
+
+  // ==================== END PDF GENERATION CODE ====================
 
   // Payment Functions
   const processPayment = async (memberId, paymentMode = 'cash') => {
@@ -1370,7 +1771,6 @@ export default function MonthDetailsPage() {
 
     const paymentDetails = calculatePaymentDetails(member)
     
-    // Show confirmation with details
     const confirmMessage = `Are you sure you want to revert this payment?\n\n` +
       `Current Principal: ₹${member.currentPrincipal?.toLocaleString()}\n` +
       `Principal Before Payment: ₹${paymentDetails.principalBeforePayment?.toLocaleString()}\n` +
@@ -1550,7 +1950,6 @@ export default function MonthDetailsPage() {
       return searchedBorrowingMembers
     }
     
-    // Show members with loans this month + members with pending borrow amounts
     const membersWithLoans = getMembersWithMonthLoans
     const membersWithPendingBorrows = members.filter(member => {
       const memberId = member._id || member.id
@@ -1697,9 +2096,14 @@ export default function MonthDetailsPage() {
     )
   }
 
+  // Tab navigation function
+  const getTabClass = (tabName) => {
+    const baseClass = 'px-4 py-2 rounded-md font-medium transition-colors'
+    return activeTab === tabName ? `${baseClass} bg-blue-600 text-white` : `${baseClass} bg-gray-200 text-gray-700 hover:bg-gray-300`
+  }
+
   return (
     <div className="min-h-screen bg-gray-100">
-      {/* Header */}
       <header className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
@@ -1722,7 +2126,6 @@ export default function MonthDetailsPage() {
         </div>
       </header>
 
-      {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Summary Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
@@ -1765,449 +2168,478 @@ export default function MonthDetailsPage() {
           </div>
         </div>
 
-        {/* Tabs */}
-        <div className="bg-white rounded-lg shadow-md overflow-hidden">
-          <div className="border-b border-gray-200">
-            <nav className="flex gap-4 px-6">
-              <button
-                onClick={() => setActiveTab('collection')}
-                className={`px-4 py-4 text-sm font-medium border-b-2 transition-colors ${
-                  activeTab === 'collection'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                संकलन तपशील (Payment Collection)
-              </button>
-              
-              <button
-                onClick={() => setActiveTab('borrowing')}
-                className={`px-4 py-4 text-sm font-medium border-b-2 transition-colors ${
-                  activeTab === 'borrowing'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                कर्ज व्यवस्थापन (Loan Management)
-              </button>
-            </nav>
-          </div>
-
-          <div className="p-6">
-            {/* Collection Tab */}
-            {activeTab === 'collection' && (
-              <div>
-                <div className="mb-6">
-                  <h2 className="text-xl font-semibold text-gray-900 mb-2">मासिक संकलन व्यवस्थापन (Monthly Collection Management)</h2>
-                  <p className="text-sm text-gray-600">
-                    {readOnlyMode 
-                      ? "फक्त पहाण्यासाठी - व्यवहार पूर्ण झाला (Read Only - Transaction Completed)" 
-                      : `भाग रक्कम (Share): ₹${SHARE_AMOUNT} | व्याज (Interest): ${INTEREST_RATE}% | दंड (Penalty): ${PENALTY_RATE}% + ₹${BASE_PENALTY}`
-                    }
-                  </p>
-                </div>
-
-                {/* Search */}
-                {!readOnlyMode && (
-                  <div className="mb-6">
-                    <input
-                      type="text"
-                      value={collectionSearchTerm}
-                      onChange={(e) => setCollectionSearchTerm(e.target.value)}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
-                      placeholder="नाव किंवा अनुक्रमांक प्रविष्ट करा (Search by Name or Serial No.)"
-                    />
-                  </div>
-                )}
-
-                {/* Collection Table */}
-                <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          सभा. क्र<br/>(Serial No.)
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          भागधारकाचे नाव<br/>(Member Name)
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          भाग रक्कम<br/>(Share Amount)
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          कर्ज शिल्लक<br/>(Loan Balance)
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          मुद्दल भरणा<br/>(Principal Payment)
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          व्याज<br/>(Interest)
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          दंड<br/>(Penalty)
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          नवीन शिल्लक<br/>(New Balance)
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          एकूण<br/>(Total)
-                        </th>
-                        {!readOnlyMode && (
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            क्रिया<br/>(Action)
-                          </th>
-                        )}
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      {filteredMembers.map((member) => {
-                        const memberId = member._id || member.id
-                        const paymentDetails = calculatePaymentDetails(member)
-                        const penaltyAmount = calculatePenalty(member)
-                        const isPaid = hasMemberPaid(member)
-                        const totalAmount = isPaid
-                          ? (monthPayments[memberId]?.calculatedTotal || monthPayments[memberId]?.paidAmount || 0)
-                          : (paymentDetails.total + penaltyAmount)
-                        const remainingPrincipal = paymentDetails.newPrincipal
-                        const totalBorrowedThisMonth = paymentDetails.totalBorrowedThisMonth
-
-                        return (
-                          <tr key={memberId} className={getPaymentStatusClass(member)}>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                              {member.serialNo}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              <div className="text-sm font-medium text-gray-900">{member.name}</div>
-                              <div className="text-sm text-gray-500">{member.phone}</div>
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                              ₹{SHARE_AMOUNT.toLocaleString()}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm">
-                              {(member.isBorrower || totalBorrowedThisMonth > 0) ? (
-                                <div>
-                                  <div className="text-red-600 font-semibold">
-                                    ₹{paymentDetails.principalBeforeLoans.toLocaleString()}
-                                  </div>
-                                  {totalBorrowedThisMonth > 0 && (
-                                    <div className="text-xs text-blue-600 mt-1">
-                                      +₹{totalBorrowedThisMonth.toLocaleString()} (इस महीने)
-                                    </div>
-                                  )}
-                                </div>
-                              ) : (
-                                <span className="text-gray-400">-</span>
-                              )}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              {(member.isBorrower || totalBorrowedThisMonth > 0) ? (
-                                readOnlyMode ? (
-                                  isPaid ? (
-                                    <div className="text-sm text-blue-600 font-medium">
-                                      ₹{(monthPayments[memberId]?.calculatedMuddal || monthPayments[memberId]?.muddalPaid || 0).toLocaleString()}
-                                    </div>
-                                  ) : (
-                                    <span className="text-gray-400">-</span>
-                                  )
-                                ) : isPaid ? (
-                                  <div className="text-sm text-blue-600 font-medium">
-                                    ₹{(monthPayments[memberId]?.calculatedMuddal || monthPayments[memberId]?.muddalPaid || 0).toLocaleString()}
-                                  </div>
-                                ) : (
-                                  <input
-                                    type="number"
-                                    value={muddalInputs[memberId] || ''}
-                                    onChange={(e) => handleMuddalChange(memberId, e.target.value)}
-                                    className="w-full px-2 py-1 border border-gray-300 rounded-md text-black"
-                                    placeholder="0"
-                                    disabled={isPaid}
-                                  />
-                                )
-                              ) : (
-                                <span className="text-gray-400">-</span>
-                              )}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                              {(member.isBorrower || totalBorrowedThisMonth > 0) ? (
-                                <div>
-                                  <span className="text-orange-600 font-medium">
-                                    ₹{paymentDetails.interestAmount.toLocaleString()}
-                                  </span>
-                                  {totalBorrowedThisMonth > 0 && !isPaid && (
-                                    <div className="text-xs text-gray-500 mt-1">
-                                      (on ₹{paymentDetails.currentPrincipalWithLoans.toLocaleString()})
-                                    </div>
-                                  )}
-                                </div>
-                              ) : (
-                                <span className="text-gray-400">-</span>
-                              )}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              {readOnlyMode ? (
-                                isPaid && penaltyAmount > 0 ? (
-                                  <div className="text-sm text-red-600 font-medium">
-                                    ₹{penaltyAmount.toLocaleString()}
-                                  </div>
-                                ) : (
-                                  <span className="text-gray-400">-</span>
-                                )
-                              ) : isPaid ? (
-                                penaltyAmount > 0 ? (
-                                  <div className="text-sm text-red-600 font-medium">
-                                    ₹{penaltyAmount.toLocaleString()}
-                                  </div>
-                                ) : (
-                                  <span className="text-gray-400">-</span>
-                                )
-                              ) : (
-                                <div className="space-y-1">
-                                  <button
-                                    onClick={() => togglePenalty(memberId)}
-                                    className={`px-2 py-1 text-xs rounded w-full ${
-                                      member.penaltyApplied ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800'
-                                    }`}
-                                    disabled={isPaid}
-                                  >
-                                    {member.penaltyApplied ? 'दंड ✓' : 'दंड नाही'}
-                                  </button>
-                                  {member.penaltyApplied && (
-                                    <input
-                                      type="number"
-                                      value={penaltyInputs[memberId] || ''}
-                                      onChange={(e) => handlePenaltyChange(memberId, e.target.value)}
-                                      className="w-full px-1 py-1 border border-gray-300 rounded-md text-black text-xs"
-                                      placeholder={calculatePenalty(member).toString()}
-                                      disabled={isPaid}
-                                    />
-                                  )}
-                                </div>
-                              )}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm">
-                              {(member.isBorrower || totalBorrowedThisMonth > 0) ? (
-                                <div>
-                                  <div className="text-purple-600 font-semibold">
-                                    ₹{remainingPrincipal.toLocaleString()}
-                                  </div>
-                                  {paymentDetails.currentPrincipalWithLoans > remainingPrincipal && (
-                                    <div className="text-xs text-green-600 mt-1">
-                                      ↓ ₹{(paymentDetails.currentPrincipalWithLoans - remainingPrincipal).toLocaleString()}
-                                    </div>
-                                  )}
-                                </div>
-                              ) : (
-                                <span className="text-gray-400">-</span>
-                              )}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-green-600">
-                              ₹{totalAmount.toLocaleString()}
-                            </td>
-                            {!readOnlyMode && (
-                              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                <div className="space-y-2">
-                                  {!isPaid ? (
-                                    showPaymentMode === memberId ? (
-                                      <div className="flex gap-2">
-                                        <button
-                                          onClick={() => processPayment(memberId, 'cash')}
-                                          className="flex-1 px-2 py-2 text-sm rounded-md bg-green-600 text-white hover:bg-green-700"
-                                          title="रोख पेमेंट (Cash)"
-                                        >
-                                          रोख
-                                        </button>
-                                        <button
-                                          onClick={() => processPayment(memberId, 'online')}
-                                          className="flex-1 px-2 py-2 text-sm rounded-md bg-blue-600 text-white hover:bg-blue-700"
-                                          title="ऑनलाइन पेमेंट (Online)"
-                                        >
-                                          ऑनलाइन
-                                        </button>
-                                        <button
-                                          onClick={() => setShowPaymentMode(null)}
-                                          className="px-2 py-2 text-sm rounded-md bg-gray-600 text-white hover:bg-gray-700"
-                                        >
-                                          ×
-                                        </button>
-                                      </div>
-                                    ) : (
-                                      <button
-                                        onClick={() => setShowPaymentMode(memberId)}
-                                        className="w-full px-3 py-2 text-sm rounded-md bg-green-600 text-white hover:bg-green-700"
-                                      >
-                                        पेमेंट करा
-                                      </button>
-                                    )
-                                  ) : (
-                                    <button
-                                      onClick={() => revertPayment(memberId)}
-                                      className="w-full px-3 py-2 text-sm rounded-md bg-yellow-600 text-white hover:bg-yellow-700"
-                                    >
-                                      परत करा
-                                    </button>
-                                  )}
-                                </div>
-                              </td>
-                            )}
-                          </tr>
-                        )
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )}
-
-            {/* Borrowing Tab - same as before */}
-            {activeTab === 'borrowing' && (
-              <div>
-                <div className="mb-6">
-                  <h2 className="text-xl font-semibold text-gray-900 mb-2">कर्ज व्यवस्थापन (Loan Management)</h2>
-                  <p className="text-sm text-gray-600">
-                    {readOnlyMode
-                      ? "फक्त पहाण्यासाठी - व्यवहार पूर्ण झाला (Read Only - Transaction Completed)"
-                      : "कर्ज प्रक्रियेसाठी नाव किंवा अनुक्रमांकाने सदस्य शोधा (Search member for loan processing)"
-                    }
-                  </p>
-                </div>
-
-                {!readOnlyMode && (
-                  <div className="mb-6">
-                    <input
-                      type="text"
-                      value={borrowingSearchTerm}
-                      onChange={(e) => setBorrowingSearchTerm(e.target.value)}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
-                      placeholder="नाव किंवा अनुक्रमांक प्रविष्ट करा (Search by Name or Serial No.)"
-                    />
-                  </div>
-                )}
-
-                <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">सभा. क्र<br/>(Serial No.)</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">भागधारकाचे नाव<br/>(Member Name)</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">मागील कर्ज<br/>(Previous Loan)</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">यावेळी घेतलेले कर्ज<br/>(Loan Taken)</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">जामीन<br/>(Guarantor)</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">नवीन कर्ज शिल्लक<br/>(New Loan Balance)</th>
-                        {!readOnlyMode && <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">क्रिया<br/>(Action)</th>}
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      {getDisplayBorrowingMembers.map((member) => {
-                        const memberId = member._id || member.id
-                        const borrowAmount = borrowAmounts[memberId] || ''
-                        const totalBorrowingThisMonth = getTotalBorrowingThisMonth(memberId)
-                        const previousPrincipal = getPreviousPrincipal(member)
-                        const allGuarantors = getAllGuarantorsThisMonth(memberId)
-                        const currentPrincipal = member.currentPrincipal || 0
-                        const newPrincipalWithPending = currentPrincipal + (parseInt(borrowAmount) || 0)
-                        const memberGuarantors = guarantors[memberId] || ['', '']
-
-                        return (
-                          <tr key={memberId}>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{member.serialNo}</td>
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              <div className="text-sm font-medium text-gray-900">{member.name}</div>
-                              <div className="text-sm text-gray-500">{member.phone}</div>
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">₹{previousPrincipal.toLocaleString()}</td>
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              {readOnlyMode ? (
-                                totalBorrowingThisMonth > 0 ? (
-                                  <div className="text-sm text-blue-600 font-semibold">₹{totalBorrowingThisMonth.toLocaleString()}</div>
-                                ) : <span className="text-gray-400">-</span>
-                              ) : (
-                                <div className="space-y-1">
-                                  <input
-                                    type="number"
-                                    value={borrowAmount}
-                                    onChange={(e) => handleBorrowAmountChange(memberId, e.target.value)}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-black"
-                                    placeholder="रक्कम प्रविष्ट करा"
-                                  />
-                                  {totalBorrowingThisMonth > 0 && (
-                                    <div className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded">या महिन्यात आधीच: ₹{totalBorrowingThisMonth.toLocaleString()}</div>
-                                  )}
-                                </div>
-                              )}
-                            </td>
-                            <td className="px-6 py-4">
-                              {readOnlyMode ? (
-                                allGuarantors.length > 0 ? (
-                                  <div className="space-y-1">
-                                    {allGuarantors.map((guarantor, idx) => (
-                                      <div key={idx} className="text-sm text-gray-900 bg-blue-50 px-2 py-1 rounded">{guarantor}</div>
-                                    ))}
-                                  </div>
-                                ) : <span className="text-gray-400">जामीन नाही</span>
-                              ) : (
-                                <div className="space-y-2">
-                                  {[0, 1].map((guarantorIndex) => {
-                                    const dropdownKey = `${memberId}-${guarantorIndex}`
-                                    const suggestions = getGuarantorSuggestions(memberId, memberGuarantors[guarantorIndex])
-                                    return (
-                                      <div key={guarantorIndex} className="relative">
-                                        <div className="flex gap-2">
-                                          <input
-                                            type="text"
-                                            value={memberGuarantors[guarantorIndex]}
-                                            onChange={(e) => handleGuarantorChange(memberId, guarantorIndex, e.target.value)}
-                                            onFocus={() => setActiveGuarantorDropdown(dropdownKey)}
-                                            className="flex-1 px-3 py-1 border border-gray-300 rounded-md text-black text-sm"
-                                            placeholder={`जामीन ${guarantorIndex + 1} (Optional)`}
-                                          />
-                                          <button onClick={() => toggleGuarantorDropdown(memberId, guarantorIndex)} className="px-2 py-1 bg-gray-200 rounded-md hover:bg-gray-300 text-sm">↓</button>
-                                        </div>
-                                        {activeGuarantorDropdown === dropdownKey && suggestions.length > 0 && (
-                                          <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
-                                            {suggestions.map((suggestion) => (
-                                              <div key={suggestion._id || suggestion.id} onClick={() => handleGuarantorSelect(memberId, guarantorIndex, suggestion.name)} className="px-3 py-2 hover:bg-gray-100 cursor-pointer">
-                                                <div className="text-sm font-medium text-gray-900">{suggestion.name}</div>
-                                                <div className="text-xs text-gray-500">{suggestion.serialNo}</div>
-                                              </div>
-                                            ))}
-                                          </div>
-                                        )}
-                                      </div>
-                                    )
-                                  })}
-                                  {allGuarantors.length > 0 && <div className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded">विद्यमान: {allGuarantors.join(', ')}</div>}
-                                </div>
-                              )}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              <div>
-                                <div className="text-sm font-bold text-purple-600">₹{currentPrincipal.toLocaleString()}</div>
-                                {borrowAmount > 0 && !readOnlyMode && <div className="text-xs text-green-600 mt-1">+₹{parseInt(borrowAmount).toLocaleString()}</div>}
-                              </div>
-                            </td>
-                            {!readOnlyMode && (
-                              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                <button
-                                  onClick={() => processSingleBorrowing(memberId)}
-                                  disabled={!borrowAmount || parseInt(borrowAmount) <= 0}
-                                  className={`px-3 py-2 text-sm rounded-md w-full ${borrowAmount && parseInt(borrowAmount) > 0 ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-gray-300 text-gray-500 cursor-not-allowed'}`}
-                                >
-                                  सबमिट करा
-                                </button>
-                              </td>
-                            )}
-                          </tr>
-                        )
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )}
-          </div>
+        {/* Tab Navigation */}
+        <div className="flex space-x-4 mb-6">
+          <button className={getTabClass('collection')} onClick={() => setActiveTab('collection')}>संकलन तपशील</button>
+          <button className={getTabClass('borrowing')} onClick={() => setActiveTab('borrowing')}>कर्ज व्यवस्थापन</button>
         </div>
 
-        {/* Summary Section - same as before */}
+        {/* Collection Tab Content */}
+        {activeTab === 'collection' && (
+          <div className="bg-white rounded-lg shadow-md overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-200">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h2 className="text-lg font-semibold text-gray-800">मासिक संकलन व्यवस्थापन</h2>
+                  <p className="text-sm text-gray-600 mt-1">
+                    {readOnlyMode ? (
+                      "फक्त पहाण्यासाठी - व्यवहार पूर्ण झाला"
+                    ) : (
+                      `पेमेंट व्यवस्थापित करा, भाग रक्कम: ₹${SHARE_AMOUNT} | व्याज: ${INTEREST_RATE}% | दंड: ${PENALTY_RATE}% + ₹${BASE_PENALTY}`
+                    )}
+                  </p>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <div className="flex items-center space-x-2 text-sm">
+                    <div className="flex items-center">
+                      <div className="w-3 h-3 bg-green-400 rounded-full mr-2"></div>
+                      <span>पेमेंट झाले</span>
+                    </div>
+                    <div className="flex items-center">
+                      <div className="w-3 h-3 bg-white border border-gray-300 rounded-full mr-2"></div>
+                      <span>प्रलंबित</span>
+                    </div>
+                  </div>
+                  <button 
+                    onClick={() => exportToPDF('collection')} 
+                    disabled={isGeneratingPDF}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-md transition-colors ${
+                      isGeneratingPDF 
+                        ? 'bg-gray-400 text-gray-200 cursor-not-allowed' 
+                        : 'bg-blue-600 text-white hover:bg-blue-700'
+                    }`}
+                  >
+                    {isGeneratingPDF ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                        तयार होत आहे...
+                      </>
+                    ) : (
+                      <>
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        PDF निर्यात करा
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Collection Search */}
+            {!readOnlyMode && (
+              <div className="px-6 py-4 bg-gray-50 border-b">
+                <div className="max-w-md">
+                  <input
+                    type="text"
+                    value={collectionSearchTerm}
+                    onChange={(e) => setCollectionSearchTerm(e.target.value)}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
+                    placeholder="नाव किंवा अनुक्रमांक प्रविष्ट करा"
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Collection Table - Same as before */}
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">सभा. क्र<br/>(Serial No.)</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">भागधारकाचे नाव<br/>(Member Name)</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">भाग रक्कम<br/>(Share Amount)</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">कर्ज शिल्लक<br/>(Loan Balance)</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">मुद्दल भरणा<br/>(Principal Payment)</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">व्याज<br/>(Interest)</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">दंड<br/>(Penalty)</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">नवीन शिल्लक<br/>(New Balance)</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">एकूण<br/>(Total)</th>
+                    {!readOnlyMode && (
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">क्रिया<br/>(Action)</th>
+                    )}
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {filteredMembers.map((member) => {
+                    const memberId = member._id || member.id
+                    const paymentDetails = calculatePaymentDetails(member)
+                    const penaltyAmount = calculatePenalty(member)
+                    const isPaid = hasMemberPaid(member)
+                    const totalAmount = isPaid
+                      ? (monthPayments[memberId]?.calculatedTotal || monthPayments[memberId]?.paidAmount || 0)
+                      : (paymentDetails.total + penaltyAmount)
+                    const remainingPrincipal = paymentDetails.newPrincipal
+                    const totalBorrowedThisMonth = paymentDetails.totalBorrowedThisMonth
+
+                    return (
+                      <tr key={memberId} className={getPaymentStatusClass(member)}>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {member.serialNo}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm font-medium text-gray-900">{member.name}</div>
+                          <div className="text-sm text-gray-500">{member.phone}</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          ₹{SHARE_AMOUNT.toLocaleString()}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm">
+                          {(member.isBorrower || totalBorrowedThisMonth > 0) ? (
+                            <div>
+                              <div className="text-red-600 font-semibold">
+                                ₹{paymentDetails.principalBeforeLoans.toLocaleString()}
+                              </div>
+                              {totalBorrowedThisMonth > 0 && (
+                                <div className="text-xs text-blue-600 mt-1">
+                                  +₹{totalBorrowedThisMonth.toLocaleString()} (इस महीने)
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-gray-400">-</span>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          {(member.isBorrower || totalBorrowedThisMonth > 0) ? (
+                            readOnlyMode ? (
+                              isPaid ? (
+                                <div className="text-sm text-blue-600 font-medium">
+                                  ₹{(monthPayments[memberId]?.calculatedMuddal || monthPayments[memberId]?.muddalPaid || 0).toLocaleString()}
+                                </div>
+                              ) : (
+                                <span className="text-gray-400">-</span>
+                              )
+                            ) : isPaid ? (
+                              <div className="text-sm text-blue-600 font-medium">
+                                ₹{(monthPayments[memberId]?.calculatedMuddal || monthPayments[memberId]?.muddalPaid || 0).toLocaleString()}
+                              </div>
+                            ) : (
+                              <input
+                                type="number"
+                                value={muddalInputs[memberId] || ''}
+                                onChange={(e) => handleMuddalChange(memberId, e.target.value)}
+                                className="w-full px-2 py-1 border border-gray-300 rounded-md text-black"
+                                placeholder="0"
+                                disabled={isPaid}
+                              />
+                            )
+                          ) : (
+                            <span className="text-gray-400">-</span>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {(member.isBorrower || totalBorrowedThisMonth > 0) ? (
+                            <div>
+                              <span className="text-orange-600 font-medium">
+                                ₹{paymentDetails.interestAmount.toLocaleString()}
+                              </span>
+                              {totalBorrowedThisMonth > 0 && !isPaid && (
+                                <div className="text-xs text-gray-500 mt-1">
+                                  (on ₹{paymentDetails.currentPrincipalWithLoans.toLocaleString()})
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-gray-400">-</span>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          {readOnlyMode ? (
+                            isPaid && penaltyAmount > 0 ? (
+                              <div className="text-sm text-red-600 font-medium">
+                                ₹{penaltyAmount.toLocaleString()}
+                              </div>
+                            ) : (
+                              <span className="text-gray-400">-</span>
+                            )
+                          ) : isPaid ? (
+                            penaltyAmount > 0 ? (
+                              <div className="text-sm text-red-600 font-medium">
+                                ₹{penaltyAmount.toLocaleString()}
+                              </div>
+                            ) : (
+                              <span className="text-gray-400">-</span>
+                            )
+                          ) : (
+                            <div className="space-y-1">
+                              <button
+                                onClick={() => togglePenalty(memberId)}
+                                className={`px-2 py-1 text-xs rounded w-full ${
+                                  member.penaltyApplied ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800'
+                                }`}
+                                disabled={isPaid}
+                              >
+                                {member.penaltyApplied ? 'दंड ✓' : 'दंड नाही'}
+                              </button>
+                              {member.penaltyApplied && (
+                                <input
+                                  type="number"
+                                  value={penaltyInputs[memberId] || ''}
+                                  onChange={(e) => handlePenaltyChange(memberId, e.target.value)}
+                                  className="w-full px-1 py-1 border border-gray-300 rounded-md text-black text-xs"
+                                  placeholder={calculatePenalty(member).toString()}
+                                  disabled={isPaid}
+                                />
+                              )}
+                            </div>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm">
+                          {(member.isBorrower || totalBorrowedThisMonth > 0) ? (
+                            <div>
+                              <div className="text-purple-600 font-semibold">
+                                ₹{remainingPrincipal.toLocaleString()}
+                              </div>
+                              {paymentDetails.currentPrincipalWithLoans > remainingPrincipal && (
+                                <div className="text-xs text-green-600 mt-1">
+                                  ↓ ₹{(paymentDetails.currentPrincipalWithLoans - remainingPrincipal).toLocaleString()}
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-gray-400">-</span>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-green-600">
+                          ₹{totalAmount.toLocaleString()}
+                        </td>
+                        {!readOnlyMode && (
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <div className="space-y-2">
+                              {!isPaid ? (
+                                showPaymentMode === memberId ? (
+                                  <div className="flex gap-2">
+                                    <button
+                                      onClick={() => processPayment(memberId, 'cash')}
+                                      className="flex-1 px-2 py-2 text-sm rounded-md bg-green-600 text-white hover:bg-green-700"
+                                      title="रोख पेमेंट (Cash)"
+                                    >
+                                      रोख
+                                    </button>
+                                    <button
+                                      onClick={() => processPayment(memberId, 'online')}
+                                      className="flex-1 px-2 py-2 text-sm rounded-md bg-blue-600 text-white hover:bg-blue-700"
+                                      title="ऑनलाइन पेमेंट (Online)"
+                                    >
+                                      ऑनलाइन
+                                    </button>
+                                    <button
+                                      onClick={() => setShowPaymentMode(null)}
+                                      className="px-2 py-2 text-sm rounded-md bg-gray-600 text-white hover:bg-gray-700"
+                                    >
+                                      ×
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <button
+                                    onClick={() => setShowPaymentMode(memberId)}
+                                    className="w-full px-3 py-2 text-sm rounded-md bg-green-600 text-white hover:bg-green-700"
+                                  >
+                                    पेमेंट करा
+                                  </button>
+                                )
+                              ) : (
+                                <button
+                                  onClick={() => revertPayment(memberId)}
+                                  className="w-full px-3 py-2 text-sm rounded-md bg-yellow-600 text-white hover:bg-yellow-700"
+                                >
+                                  परत करा
+                                </button>
+                              )}
+                            </div>
+                          </td>
+                        )}
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* Borrowing Tab Content */}
+        {activeTab === 'borrowing' && (
+          <div className="bg-white rounded-lg shadow-md overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-200">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h2 className="text-lg font-semibold text-gray-800">कर्ज व्यवस्थापन</h2>
+                  <p className="text-sm text-gray-600 mt-1">
+                    {readOnlyMode ? (
+                      "फक्त पहाण्यासाठी - व्यवहार पूर्ण झाला"
+                    ) : (
+                      "कर्ज प्रक्रियेसाठी नाव किंवा अनुक्रमांकाने सदस्य शोधा"
+                    )}
+                  </p>
+                </div>
+                <button 
+                  onClick={() => exportToPDF('borrowing')} 
+                  disabled={isGeneratingPDF}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-md transition-colors ${
+                    isGeneratingPDF 
+                      ? 'bg-gray-400 text-gray-200 cursor-not-allowed' 
+                      : 'bg-blue-600 text-white hover:bg-blue-700'
+                  }`}
+                >
+                  {isGeneratingPDF ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      तयार होत आहे...
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                      PDF निर्यात करा
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {/* Borrowing Search */}
+            {!readOnlyMode && (
+              <div className="px-6 py-4 bg-gray-50 border-b">
+                <div className="max-w-md">
+                  <input
+                    type="text"
+                    value={borrowingSearchTerm}
+                    onChange={(e) => setBorrowingSearchTerm(e.target.value)}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
+                    placeholder="नाव किंवा अनुक्रमांक प्रविष्ट करा"
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Borrowing Table - Same as before */}
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">सभा. क्र<br/>(Serial No.)</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">भागधारकाचे नाव<br/>(Member Name)</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">मागील कर्ज<br/>(Previous Loan)</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">यावेळी घेतलेले कर्ज<br/>(Loan Taken)</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">जामीन<br/>(Guarantor)</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">नवीन कर्ज शिल्लक<br/>(New Loan Balance)</th>
+                    {!readOnlyMode && <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">क्रिया<br/>(Action)</th>}
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {getDisplayBorrowingMembers.map((member) => {
+                    const memberId = member._id || member.id
+                    const borrowAmount = borrowAmounts[memberId] || ''
+                    const totalBorrowingThisMonth = getTotalBorrowingThisMonth(memberId)
+                    const previousPrincipal = getPreviousPrincipal(member)
+                    const allGuarantors = getAllGuarantorsThisMonth(memberId)
+                    const currentPrincipal = member.currentPrincipal || 0
+                    const newPrincipalWithPending = currentPrincipal + (parseInt(borrowAmount) || 0)
+                    const memberGuarantors = guarantors[memberId] || ['', '']
+
+                    return (
+                      <tr key={memberId}>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{member.serialNo}</td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm font-medium text-gray-900">{member.name}</div>
+                          <div className="text-sm text-gray-500">{member.phone}</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">₹{previousPrincipal.toLocaleString()}</td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          {readOnlyMode ? (
+                            totalBorrowingThisMonth > 0 ? (
+                              <div className="text-sm text-blue-600 font-semibold">₹{totalBorrowingThisMonth.toLocaleString()}</div>
+                            ) : <span className="text-gray-400">-</span>
+                          ) : (
+                            <div className="space-y-1">
+                              <input
+                                type="number"
+                                value={borrowAmount}
+                                onChange={(e) => handleBorrowAmountChange(memberId, e.target.value)}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md text-black"
+                                placeholder="रक्कम प्रविष्ट करा"
+                              />
+                              {totalBorrowingThisMonth > 0 && (
+                                <div className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded">या महिन्यात आधीच: ₹{totalBorrowingThisMonth.toLocaleString()}</div>
+                              )}
+                            </div>
+                          )}
+                        </td>
+                        <td className="px-6 py-4">
+                          {readOnlyMode ? (
+                            allGuarantors.length > 0 ? (
+                              <div className="space-y-1">
+                                {allGuarantors.map((guarantor, idx) => (
+                                  <div key={idx} className="text-sm text-gray-900 bg-blue-50 px-2 py-1 rounded">{guarantor}</div>
+                                ))}
+                              </div>
+                            ) : <span className="text-gray-400">जामीन नाही</span>
+                          ) : (
+                            <div className="space-y-2">
+                              {[0, 1].map((guarantorIndex) => {
+                                const dropdownKey = `${memberId}-${guarantorIndex}`
+                                const suggestions = getGuarantorSuggestions(memberId, memberGuarantors[guarantorIndex])
+                                return (
+                                  <div key={guarantorIndex} className="relative">
+                                    <div className="flex gap-2">
+                                      <input
+                                        type="text"
+                                        value={memberGuarantors[guarantorIndex]}
+                                        onChange={(e) => handleGuarantorChange(memberId, guarantorIndex, e.target.value)}
+                                        onFocus={() => setActiveGuarantorDropdown(dropdownKey)}
+                                        className="flex-1 px-3 py-1 border border-gray-300 rounded-md text-black text-sm"
+                                        placeholder={`जामीन ${guarantorIndex + 1} (Optional)`}
+                                      />
+                                      <button onClick={() => toggleGuarantorDropdown(memberId, guarantorIndex)} className="px-2 py-1 bg-gray-200 rounded-md hover:bg-gray-300 text-sm">↓</button>
+                                    </div>
+                                    {activeGuarantorDropdown === dropdownKey && suggestions.length > 0 && (
+                                      <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
+                                        {suggestions.map((suggestion) => (
+                                          <div key={suggestion._id || suggestion.id} onClick={() => handleGuarantorSelect(memberId, guarantorIndex, suggestion.name)} className="px-3 py-2 hover:bg-gray-100 cursor-pointer">
+                                            <div className="text-sm font-medium text-gray-900">{suggestion.name}</div>
+                                            <div className="text-xs text-gray-500">{suggestion.serialNo}</div>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    )}
+                                  </div>
+                                )
+                              })}
+                              {allGuarantors.length > 0 && <div className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded">विद्यमान: {allGuarantors.join(', ')}</div>}
+                            </div>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div>
+                            <div className="text-sm font-bold text-purple-600">₹{currentPrincipal.toLocaleString()}</div>
+                            {borrowAmount > 0 && !readOnlyMode && <div className="text-xs text-green-600 mt-1">+₹{parseInt(borrowAmount).toLocaleString()}</div>}
+                          </div>
+                        </td>
+                        {!readOnlyMode && (
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <button
+                              onClick={() => processSingleBorrowing(memberId)}
+                              disabled={!borrowAmount || parseInt(borrowAmount) <= 0}
+                              className={`px-3 py-2 text-sm rounded-md w-full ${borrowAmount && parseInt(borrowAmount) > 0 ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-gray-300 text-gray-500 cursor-not-allowed'}`}
+                            >
+                              सबमिट करा
+                            </button>
+                          </td>
+                        )}
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* Summary Section */}
         <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="bg-white rounded-lg shadow-md p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">पेमेंट सारांश (Payment Summary)</h3>

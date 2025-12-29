@@ -1731,167 +1731,6 @@ export default function MonthDetailsPage() {
 
   // ==================== END PDF GENERATION CODE ====================
 
-  // Payment Functions
-  const processPayment = async (memberId, paymentMode = 'cash') => {
-    if (readOnlyMode) return
-
-    const member = members.find(m => (m._id || m.id) === memberId)
-    if (!member) return
-
-    const paymentDetails = calculatePaymentDetails(member)
-    const penaltyAmount = calculatePenalty(member)
-    const totalDue = paymentDetails.total + penaltyAmount
-
-    try {
-      const response = await fetch(`/api/months/${date}/payments`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          memberId: member._id || member.id,
-          shareAmount: paymentDetails.shareAmount,
-          muddalPaid: paymentDetails.muddalPaid,
-          interestAmount: paymentDetails.interestAmount,
-          penaltyAmount,
-          totalAmount: totalDue,
-          paymentMode,
-          principalBefore: member.currentPrincipal,
-          principalAfter: paymentDetails.newPrincipal
-        })
-      })
-
-      const result = await response.json()
-
-      if (result.success) {
-        await loadMonthData()
-        setShowPaymentMode(null)
-        alert(`Payment processed successfully via ${paymentMode === 'cash' ? 'Cash' : 'Online'}!\nTotal collected: ₹${totalDue}`)
-      } else {
-        alert(`Error: ${result.error}`)
-      }
-    } catch (error) {
-      console.error('Error processing payment:', error)
-      alert('Failed to process payment')
-    }
-  }
-
-  const revertPayment = async (memberId) => {
-    if (readOnlyMode) return
-
-    const member = members.find(m => (m._id || m.id) === memberId)
-    if (!member) return
-
-    const paymentDetails = calculatePaymentDetails(member)
-
-    const confirmMessage = `Are you sure you want to revert this payment?\n\n` +
-      `Current Principal: ₹${member.currentPrincipal?.toLocaleString()}\n` +
-      `Principal Before Payment: ₹${paymentDetails.principalBeforePayment?.toLocaleString()}\n` +
-      `Muddal Paid: ₹${paymentDetails.muddalPaid?.toLocaleString()}\n\n` +
-      `After revert, principal will be: ₹${paymentDetails.principalBeforePayment?.toLocaleString()}`
-
-    if (!confirm(confirmMessage)) return
-
-    try {
-      const response = await fetch(`/api/months/${date}/payments?memberId=${memberId}`, {
-        method: 'DELETE'
-      })
-
-      const result = await response.json()
-
-      if (result.success) {
-        await loadMonthData()
-        setMuddalInputs(prev => ({ ...prev, [memberId]: 0 }))
-        setPenaltyInputs(prev => ({ ...prev, [memberId]: 0 }))
-        setShowPaymentMode(null)
-        alert('Payment reverted successfully')
-      } else {
-        alert(`Error: ${result.error}`)
-      }
-    } catch (error) {
-      console.error('Error reverting payment:', error)
-      alert('Failed to revert payment')
-    }
-  }
-
-  const togglePenalty = async (memberId) => {
-    const member = members.find(m => (m._id || m.id) === memberId)
-    if (!member) return
-
-    try {
-      const response = await fetch('/api/members/penalty', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          memberId: member._id || member.id,
-          penaltyApplied: !member.penaltyApplied
-        })
-      })
-
-      const result = await response.json()
-
-      if (result.success) {
-        setMembers(members.map(m =>
-          (m._id || m.id) === memberId ? { ...m, penaltyApplied: !m.penaltyApplied } : m
-        ))
-      }
-    } catch (error) {
-      console.error('Error toggling penalty:', error)
-    }
-  }
-
-  // Borrowing Functions
-  const processSingleBorrowing = async (memberId) => {
-    if (readOnlyMode) return
-
-    const borrowAmount = borrowAmounts[memberId] || 0
-    if (borrowAmount <= 0) {
-      alert('Please enter a valid amount')
-      return
-    }
-
-    const memberGuarantors = guarantors[memberId] || ['', '']
-    const validGuarantors = memberGuarantors.filter(g => g.trim() !== '')
-
-    try {
-      const member = members.find(m => (m._id || m.id) === memberId)
-      const response = await fetch(`/api/months/${date}/borrowings`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          memberId: member._id || member.id,
-          amount: borrowAmount,
-          guarantors: validGuarantors
-        })
-      })
-
-      const result = await response.json()
-
-      if (result.success) {
-        await loadMonthData()
-        setBorrowAmounts(prev => ({ ...prev, [memberId]: 0 }))
-        setGuarantors(prev => ({ ...prev, [memberId]: ['', ''] }))
-        alert(`Loan of ₹${borrowAmount.toLocaleString()} processed successfully`)
-      } else {
-        alert(`Error: ${result.error}`)
-      }
-    } catch (error) {
-      console.error('Error processing borrowing:', error)
-      alert('Failed to process borrowing')
-    }
-  }
-
-  // UI Handlers
-  const handleMuddalChange = (memberId, amount) => {
-    setMuddalInputs(prev => ({ ...prev, [memberId]: parseInt(amount) || 0 }))
-  }
-
-  const handlePenaltyChange = (memberId, amount) => {
-    setPenaltyInputs(prev => ({ ...prev, [memberId]: parseInt(amount) || 0 }))
-  }
-
-  const handleBorrowAmountChange = (memberId, amount) => {
-    setBorrowAmounts(prev => ({ ...prev, [memberId]: parseInt(amount) || 0 }))
-  }
-
   // Search functionality
   const searchedCollectionMembers = useMemo(() => {
     if (!collectionSearchTerm.trim()) return members
@@ -2051,6 +1890,152 @@ export default function MonthDetailsPage() {
   }
 
   const monthStats = calculateMonthStats()
+
+  // UI Handlers
+  const handleMuddalChange = (memberId, amount) => {
+    setMuddalInputs(prev => ({ ...prev, [memberId]: parseInt(amount) || 0 }))
+  }
+
+  const handlePenaltyChange = (memberId, amount) => {
+    setPenaltyInputs(prev => ({ ...prev, [memberId]: parseInt(amount) || 0 }))
+  }
+
+  const handleBorrowAmountChange = (memberId, amount) => {
+    setBorrowAmounts(prev => ({ ...prev, [memberId]: parseInt(amount) || 0 }))
+  }
+
+  const togglePenalty = async (memberId) => {
+    const member = members.find(m => (m._id || m.id) === memberId)
+    if (!member) return
+
+    try {
+      const response = await fetch('/api/members/penalty', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          memberId: member._id || member.id,
+          penaltyApplied: !member.penaltyApplied
+        })
+      })
+
+      const result = await response.json()
+
+      if (result.success) {
+        setMembers(members.map(m =>
+          (m._id || m.id) === memberId ? { ...m, penaltyApplied: !m.penaltyApplied } : m
+        ))
+      }
+    } catch (error) {
+      console.error('Error toggling penalty:', error)
+    }
+  }
+
+  // Payment Functions
+  const processPayment = async (member, paymentMode = 'cash') => {
+    if (readOnlyMode) return
+
+    const memberId = member._id || member.id
+    const paymentDetails = calculatePaymentDetails(member)
+    const penaltyAmount = calculatePenalty(member)
+    const totalDue = paymentDetails.total + penaltyAmount
+
+    try {
+      const response = await fetch(`/api/months/${date}/payments`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          memberId,
+          shareAmount: paymentDetails.shareAmount,
+          muddalPaid: paymentDetails.muddalPaid,
+          interestAmount: paymentDetails.interestAmount,
+          penaltyAmount,
+          totalAmount: totalDue,
+          paymentMode,
+          principalBefore: paymentDetails.principalBeforeLoans,
+          principalAfter: paymentDetails.newPrincipal
+        })
+      })
+
+      const result = await response.json()
+
+      if (result.success) {
+        await loadMonthData()
+        alert(`Payment processed successfully via ${paymentMode === 'cash' ? 'Cash' : 'Online'}!\\nTotal collected: ₹${totalDue}`)
+      } else {
+        alert(`Error: ${result.error}`)
+      }
+    } catch (error) {
+      console.error('Error processing payment:', error)
+      alert('Failed to process payment')
+    }
+  }
+
+  const handleUndoPayment = async (memberId) => {
+    if (readOnlyMode) return
+
+    if (!confirm('Are you sure you want to undo this payment?')) return
+
+    try {
+      const response = await fetch(`/api/months/${date}/payments?memberId=${memberId}`, {
+        method: 'DELETE'
+      })
+
+      const result = await response.json()
+
+      if (result.success) {
+        await loadMonthData()
+        setMuddalInputs(prev => ({ ...prev, [memberId]: 0 }))
+        setPenaltyInputs(prev => ({ ...prev, [memberId]: 0 }))
+        alert('Payment reverted successfully')
+      } else {
+        alert(`Error: ${result.error}`)
+      }
+    } catch (error) {
+      console.error('Error reverting payment:', error)
+      alert('Failed to revert payment')
+    }
+  }
+
+  // Borrowing Functions
+  const processSingleBorrowing = async (memberId) => {
+    if (readOnlyMode) return
+
+    const borrowAmount = borrowAmounts[memberId] || 0
+    if (borrowAmount <= 0) {
+      alert('Please enter a valid amount')
+      return
+    }
+
+    const memberGuarantors = guarantors[memberId] || ['', '']
+    const validGuarantors = memberGuarantors.filter(g => g.trim() !== '')
+
+    try {
+      const member = members.find(m => (m._id || m.id) === memberId)
+      const response = await fetch(`/api/months/${date}/borrowings`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          memberId: member._id || member.id,
+          amount: borrowAmount,
+          guarantors: validGuarantors
+        })
+      })
+
+      const result = await response.json()
+
+      if (result.success) {
+        await loadMonthData()
+        setBorrowAmounts(prev => ({ ...prev, [memberId]: 0 }))
+        setGuarantors(prev => ({ ...prev, [memberId]: ['', ''] }))
+        alert(`Loan of ₹${borrowAmount.toLocaleString()} processed successfully`)
+      } else {
+        alert(`Error: ${result.error}`)
+      }
+    } catch (error) {
+      console.error('Error processing borrowing:', error)
+      alert('Failed to process borrowing')
+    }
+  }
 
   // Card styling
   const getCardClass = (cardType) => {

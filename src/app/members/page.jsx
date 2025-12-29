@@ -300,7 +300,7 @@ export default function Members() {
       setSuccess('Member added successfully!')
       setNewMember({ name: '', email: '', phone: '' })
       await loadMembers()
-      
+
       // Clear success message after 3 seconds
       setTimeout(() => setSuccess(''), 3000)
     } catch (error) {
@@ -319,7 +319,7 @@ export default function Members() {
       await membersAPI.delete(id)
       setSuccess('Member removed successfully!')
       await loadMembers()
-      
+
       setTimeout(() => setSuccess(''), 3000)
     } catch (error) {
       setError(error.message || 'Failed to remove member')
@@ -354,7 +354,7 @@ export default function Members() {
       setEditingMember(null)
       setEditForm({ name: '', email: '', phone: '' })
       await loadMembers()
-      
+
       setTimeout(() => setSuccess(''), 3000)
     } catch (error) {
       setError(error.message || 'Failed to update member')
@@ -383,8 +383,8 @@ export default function Members() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
             <h1 className="text-2xl font-bold text-gray-900">Member Management</h1>
-            <Link 
-              href="/dashboard" 
+            <Link
+              href="/dashboard"
               className="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500"
             >
               ← Back to Dashboard
@@ -401,7 +401,7 @@ export default function Members() {
             {error}
           </div>
         )}
-        
+
         {success && (
           <div className="mb-4 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded">
             {success}
@@ -416,25 +416,25 @@ export default function Members() {
               type="text"
               placeholder="Full Name"
               value={newMember.name}
-              onChange={(e) => setNewMember({...newMember, name: e.target.value})}
+              onChange={(e) => setNewMember({ ...newMember, name: e.target.value })}
               className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
             />
             <input
               type="email"
               placeholder="Email"
               value={newMember.email}
-              onChange={(e) => setNewMember({...newMember, email: e.target.value})}
+              onChange={(e) => setNewMember({ ...newMember, email: e.target.value })}
               className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
             />
             <input
               type="tel"
               placeholder="Phone"
               value={newMember.phone}
-              onChange={(e) => setNewMember({...newMember, phone: e.target.value})}
+              onChange={(e) => setNewMember({ ...newMember, phone: e.target.value })}
               className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
             />
           </div>
-          <button 
+          <button
             onClick={addMember}
             className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
@@ -503,13 +503,13 @@ export default function Members() {
                     <td className="px-4 py-4 whitespace-nowrap text-sm space-x-2">
                       {editingMember === member._id ? (
                         <>
-                          <button 
+                          <button
                             onClick={() => saveEdit(member._id)}
                             className="bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500"
                           >
                             Save
                           </button>
-                          <button 
+                          <button
                             onClick={cancelEdit}
                             className="bg-gray-600 text-white px-3 py-1 rounded text-sm hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500"
                           >
@@ -518,13 +518,19 @@ export default function Members() {
                         </>
                       ) : (
                         <>
-                          <button 
+                          <Link
+                            href={`/members/${member._id}`}
+                            className="bg-purple-600 text-white px-3 py-1 rounded text-sm hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 inline-block"
+                          >
+                            View
+                          </Link>
+                          <button
                             onClick={() => startEdit(member)}
                             className="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
                           >
                             Edit
                           </button>
-                          <button 
+                          <button
                             onClick={() => removeMember(member._id)}
                             className="bg-red-600 text-white px-3 py-1 rounded text-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500"
                           >
@@ -687,8 +693,8 @@ export default function Members() {
 //         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 //           <div className="flex justify-between items-center py-4">
 //             <h1 className="text-2xl font-bold text-gray-900">Member Management</h1>
-//             <Link 
-//               href="/dashboard" 
+//             <Link
+//               href="/dashboard"
 //               className="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500"
 //             >
 //               ← Back to Dashboard
@@ -725,7 +731,7 @@ export default function Members() {
 //               className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 "
 //             />
 //           </div>
-//           <button 
+//           <button
 //             onClick={addMember}
 //             className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
 //           >
@@ -792,13 +798,13 @@ export default function Members() {
 //                     <td className="px-4 py-4 whitespace-nowrap text-sm space-x-2">
 //                       {editingMember === member.id ? (
 //                         <>
-//                           <button 
+//                           <button
 //                             onClick={() => saveEdit(member.id)}
 //                             className="bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500"
 //                           >
 //                             Save
 //                           </button>
-//                           <button 
+//                           <button
 //                             onClick={cancelEdit}
 //                             className="bg-gray-600 text-white px-3 py-1 rounded text-sm hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500"
 //                           >
@@ -807,13 +813,13 @@ export default function Members() {
 //                         </>
 //                       ) : (
 //                         <>
-//                           <button 
+//                           <button
 //                             onClick={() => startEdit(member)}
 //                             className="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
 //                           >
 //                             Edit
 //                           </button>
-//                           <button 
+//                           <button
 //                             onClick={() => removeMember(member.id)}
 //                             className="bg-red-600 text-white px-3 py-1 rounded text-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500"
 //                           >

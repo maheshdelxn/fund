@@ -81,6 +81,10 @@ const memberSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
+  numberOfShares: {
+    type: Number,
+    default: 0
+  },
   totalBorrowed: {
     type: Number,
     default: 0

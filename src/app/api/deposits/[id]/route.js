@@ -76,13 +76,16 @@ export async function PUT(request, { params }) {
       { new: true, runValidators: true }
     ).populate('member', 'name email phone');
 
-    // Update member's total deposits if amount changed
-    if (oldAmount !== newAmount) {
-      const member = await Member.findById(deposit.member);
-      if (member) {
-        member.totalDeposits = (member.totalDeposits || 0) - oldAmount + newAmount;
-        await member.save();
-      }
+    // Update member's total deposits and shares
+    const member = await Member.findById(deposit.member);
+    if (member) {
+      const allDeposits = await Deposit.find({ member: member._id });
+      const totalDeposits = allDeposits.reduce((sum, d) => sum + (d.amount || 0), 0);
+      const totalShares = allDeposits.reduce((sum, d) => sum + (d.shares || 0), 0);
+
+      member.totalDeposits = totalDeposits;
+      member.numberOfShares = totalShares;
+      await member.save();
     }
 
     return NextResponse.json({
@@ -118,13 +121,20 @@ export async function DELETE(request, { params }) {
     }
 
     // Update member's total deposits
+    // Update member's total deposits and shares
     const member = await Member.findById(deposit.member);
+
+    await deposit.deleteOne(); // Delete first to get correct sum
+
     if (member) {
-      member.totalDeposits = Math.max(0, (member.totalDeposits || 0) - deposit.amount);
+      const allDeposits = await Deposit.find({ member: member._id });
+      const totalDeposits = allDeposits.reduce((sum, d) => sum + (d.amount || 0), 0);
+      const totalShares = allDeposits.reduce((sum, d) => sum + (d.shares || 0), 0);
+
+      member.totalDeposits = totalDeposits;
+      member.numberOfShares = totalShares;
       await member.save();
     }
-
-    await deposit.deleteOne();
 
     return NextResponse.json({
       success: true,

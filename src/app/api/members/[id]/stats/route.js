@@ -9,8 +9,8 @@ import { authenticate } from '@/lib/auth';
 // GET /api/members/[id]/stats - Get member statistics
 export async function GET(request, { params }) {
   try {
-    const { user, error } = await authenticate(request);
-    if (error) return error;
+    // const { user, error } = await authenticate(request);
+    // if (error) return error;
 
     await connectDB();
 
@@ -70,9 +70,19 @@ export async function GET(request, { params }) {
       { $limit: 12 }
     ]);
 
+    // Detailed lists
+    const paymentList = await Payment.find({ member: member._id })
+      .sort({ paymentDate: -1 })
+      .populate('monthlyData');
+
+    const borrowingList = await Borrowing.find({ member: member._id })
+      .sort({ borrowingDate: -1 })
+      .populate('monthlyData');
+
     return NextResponse.json({
       success: true,
       data: {
+        member,
         deposits: {
           total: totalDeposits[0]?.total || 0,
           count: totalDeposits[0]?.count || 0
@@ -87,7 +97,9 @@ export async function GET(request, { params }) {
           active: activeBorrowings,
           overdue: overdueBorrowings
         },
-        paymentHistory
+        paymentHistory,
+        paymentList,
+        borrowingList
       }
     });
 

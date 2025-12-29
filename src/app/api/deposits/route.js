@@ -145,8 +145,13 @@ export async function POST(request) {
       notes
     });
 
-    // Update member's total deposits
-    member.totalDeposits = (member.totalDeposits || 0) + amount;
+    // Update member's total deposits and shares
+    const allDeposits = await Deposit.find({ member: member._id });
+    const totalDeposits = allDeposits.reduce((sum, d) => sum + (d.amount || 0), 0);
+    const totalShares = allDeposits.reduce((sum, d) => sum + (d.shares || 0), 0);
+
+    member.totalDeposits = totalDeposits;
+    member.numberOfShares = totalShares;
     await member.save();
 
     const populatedDeposit = await Deposit.findById(deposit._id)

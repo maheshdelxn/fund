@@ -323,7 +323,16 @@ export default function Deposits() {
               type="number"
               placeholder="Amount (₹) *"
               value={newDeposit.amount}
-              onChange={(e) => setNewDeposit({...newDeposit, amount: e.target.value})}
+              onChange={(e) => {
+                const amount = e.target.value;
+                const calculatedShares = amount ? Math.floor(parseInt(amount) / 1000) : '';
+                setNewDeposit({
+                  ...newDeposit, 
+                  amount: amount,
+                  shares: calculatedShares,
+                  shareAmount: calculatedShares ? (calculatedShares * 1000).toString() : ''
+                })
+              }}
               className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
             />
             

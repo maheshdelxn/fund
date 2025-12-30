@@ -3,11 +3,13 @@ import { useEffect, useState } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import Link from 'next/link'
 import { authAPI } from '@/lib/api-client'
+import html2pdf from 'html2pdf.js'
 
 export default function MemberDetails() {
     const [member, setMember] = useState(null)
     const [stats, setStats] = useState(null)
     const [loading, setLoading] = useState(true)
+    const [isGeneratingPDF, setIsGeneratingPDF] = useState(false)
     const [activeTab, setActiveTab] = useState('collections')
     const [selectedYear, setSelectedYear] = useState('all')
     const [error, setError] = useState('')
@@ -73,6 +75,137 @@ export default function MemberDetails() {
     // Get unique years from payments for filter
     const availableYears = [...new Set(stats.paymentList.map(p => new Date(p.paymentDate).getFullYear()))].sort((a, b) => b - a)
 
+    const exportToPDF = async () => {
+        setIsGeneratingPDF(true)
+        try {
+            // Create a temporary container
+            const container = document.createElement('div')
+            container.innerHTML = `
+        <div class="pdf-container">
+          <style>
+            .pdf-container { font-family: 'Arial', sans-serif; color: #333; }
+            .pdf-header { background: #f8fafc; padding: 20px; border-bottom: 2px solid #e2e8f0; margin-bottom: 20px; }
+            .header-title { font-size: 24px; font-weight: bold; color: #1e293b; margin-bottom: 5px; }
+            .header-subtitle { font-size: 14px; color: #64748b; }
+            .section-title { font-size: 16px; font-weight: bold; color: #1e293b; margin: 20px 0 10px 0; border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; }
+            
+            .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 20px; }
+            .stat-box { background: #fff; border: 1px solid #e2e8f0; padding: 10px; border-radius: 6px; text-align: center; }
+            .stat-label { font-size: 10px; font-weight: bold; color: #64748b; text-transform: uppercase; }
+            .stat-value { font-size: 16px; font-weight: bold; margin-top: 5px; }
+            .text-green { color: #16a34a; }
+            .text-blue { color: #2563eb; }
+            .text-purple { color: #9333ea; }
+            .text-indigo { color: #4f46e5; }
+            
+            table { width: 100%; border-collapse: collapse; font-size: 10px; margin-bottom: 20px; }
+            th { background: #f1f5f9; text-align: left; padding: 8px; font-weight: bold; color: #475569; border-bottom: 1px solid #cbd5e1; }
+            td { padding: 8px; border-bottom: 1px solid #e2e8f0; color: #334155; }
+            tr:nth-child(even) { background-color: #f8fafc; }
+            
+            .footer { margin-top: 30px; text-align: center; font-size: 10px; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 10px; }
+          </style>
+          
+          <div class="pdf-header">
+            <div class="header-title">${member.name}</div>
+            <div class="header-subtitle">Phone: ${member.phone} | Serial No: ${member.serialNo}</div>
+            <div class="header-subtitle" style="margin-top: 5px;">Report Generated: ${new Date().toLocaleDateString()}</div>
+          </div>
+
+          <div class="stats-grid">
+            <div class="stat-box">
+              <div class="stat-label">Total Deposits</div>
+              <div class="stat-value text-green">₹${stats.deposits.total.toLocaleString()}</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">Total Collected</div>
+              <div class="stat-value text-blue">₹${stats.payments.total.toLocaleString()}</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">Current Principal</div>
+              <div class="stat-value text-purple">₹${member.currentPrincipal?.toLocaleString() || 0}</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">Shares</div>
+              <div class="stat-value text-indigo">${member.numberOfShares || 0}</div>
+            </div>
+          </div>
+
+          <div class="section-title">Payment History ${selectedYear !== 'all' ? `(${selectedYear})` : ''}</div>
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Month</th>
+                <th>Share</th>
+                <th>Interest</th>
+                <th>Principal</th>
+                <th>Penalty</th>
+                <th>Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${filteredPayments.length > 0 ? filteredPayments.map(p => `
+                <tr>
+                  <td>${new Date(p.paymentDate).toLocaleDateString()}</td>
+                  <td>${p.monthlyData ? `${new Date(p.monthlyData.year, p.monthlyData.month - 1).toLocaleString('default', { month: 'short' })} ${p.monthlyData.year}` : '-'}</td>
+                  <td>₹${p.shareAmount}</td>
+                  <td>₹${p.interestAmount}</td>
+                  <td>₹${p.muddalPaid}</td>
+                  <td style="color: ${p.penaltyAmount > 0 ? '#dc2626' : 'inherit'}">₹${p.penaltyAmount}</td>
+                  <td style="font-weight: bold;">₹${p.totalAmount}</td>
+                </tr>
+              `).join('') : '<tr><td colspan="7" style="text-align: center;">No payment records found</td></tr>'}
+            </tbody>
+          </table>
+
+          <div class="section-title">Loan History</div>
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Amount</th>
+                <th>Type</th>
+                <th>Guarantors</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${stats.borrowingList.length > 0 ? stats.borrowingList.map(l => `
+                <tr>
+                  <td>${new Date(l.borrowingDate).toLocaleDateString()}</td>
+                  <td style="font-weight: bold; color: #2563eb;">₹${l.amount.toLocaleString()}</td>
+                  <td>${l.type || 'Standard'}</td>
+                  <td>${l.guarantors && l.guarantors.length > 0 ? l.guarantors.join(', ') : '-'}</td>
+                  <td>${l.status === 'active' ? 'Active' : 'Closed'}</td>
+                </tr>
+              `).join('') : '<tr><td colspan="5" style="text-align: center;">No borrowing records found</td></tr>'}
+            </tbody>
+          </table>
+
+          <div class="footer">
+            Shivanjali Fund Management System
+          </div>
+        </div>
+      `
+
+            const opt = {
+                margin: 10,
+                filename: `${member.name.replace(/\s+/g, '_')}_Report_${new Date().toISOString().split('T')[0]}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2 },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            }
+
+            await html2pdf().set(opt).from(container).save()
+            setIsGeneratingPDF(false)
+        } catch (error) {
+            console.error('PDF Generation Error:', error)
+            alert('Failed to generate PDF')
+            setIsGeneratingPDF(false)
+        }
+    }
+
     return (
         <div className="min-h-screen bg-gray-100">
             <header className="bg-white shadow-sm border-b">
@@ -82,12 +215,24 @@ export default function MemberDetails() {
                             <h1 className="text-2xl font-bold text-gray-900">{member.name}</h1>
                             <p className="text-sm text-gray-500">{member.phone} | {member.email}</p>
                         </div>
-                        <Link
-                            href="/members"
-                            className="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700"
-                        >
-                            ← Back to Members
-                        </Link>
+                        <div className="flex gap-2">
+                            <button
+                                onClick={exportToPDF}
+                                disabled={isGeneratingPDF}
+                                className={`px-4 py-2 rounded-md transition-colors flex items-center gap-2 ${isGeneratingPDF
+                                    ? 'bg-gray-400 text-white cursor-not-allowed'
+                                    : 'bg-blue-600 text-white hover:bg-blue-700'
+                                    }`}
+                            >
+                                {isGeneratingPDF ? 'Generating...' : 'Download Report'}
+                            </button>
+                            <Link
+                                href="/members"
+                                className="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700"
+                            >
+                                ← Back
+                            </Link>
+                        </div>
                     </div>
                 </div>
             </header>
@@ -122,8 +267,8 @@ export default function MemberDetails() {
                             <button
                                 onClick={() => setActiveTab('collections')}
                                 className={`py-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'collections'
-                                        ? 'border-blue-500 text-blue-600'
-                                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                                    ? 'border-blue-500 text-blue-600'
+                                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                                     }`}
                             >
                                 Collection Details
@@ -131,8 +276,8 @@ export default function MemberDetails() {
                             <button
                                 onClick={() => setActiveTab('borrowings')}
                                 className={`py-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'borrowings'
-                                        ? 'border-blue-500 text-blue-600'
-                                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                                    ? 'border-blue-500 text-blue-600'
+                                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                                     }`}
                             >
                                 Borrowing History

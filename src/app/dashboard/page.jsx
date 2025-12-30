@@ -23,19 +23,19 @@
 // //     const currentDate = new Date()
 // //     const currentMonth = currentDate.getMonth() // 0-based month (0 = January)
 // //     const currentDay = currentDate.getDate()
-    
+
 // //     for (let month = 0; month < 12; month++) {
 // //       const date = new Date(currentYear, month, 25)
 // //       const monthName = date.toLocaleDateString('en-US', { month: 'long' })
 // //       const formattedDate = date.toISOString().split('T')[0]
-      
+
 // //       const totalCollected = Math.floor(Math.random() * 50000) + 50000
 // //       const totalGiven = Math.floor(Math.random() * 40000) + 40000
 // //       const remainingAmount = totalCollected - totalGiven
-      
+
 // //       // Determine status based on current date
 // //       let status = 'completed'
-      
+
 // //       if (month > currentMonth) {
 // //         // Future months
 // //         status = 'upcoming'
@@ -48,7 +48,7 @@
 // //         }
 // //       }
 // //       // For previous months, status remains 'completed'
-      
+
 // //       months.push({
 // //         id: month + 1,
 // //         name: monthName,
@@ -60,23 +60,23 @@
 // //         status: status
 // //       })
 // //     }
-    
+
 // //     return months
 // //   }
 
 // //   // Generate data for any historical year
 // //   const generateYearData = (year) => {
 // //     const months = []
-    
+
 // //     for (let month = 0; month < 12; month++) {
 // //       const date = new Date(year, month, 25)
 // //       const monthName = date.toLocaleDateString('en-US', { month: 'long' })
 // //       const formattedDate = date.toISOString().split('T')[0]
-      
+
 // //       const totalCollected = Math.floor(Math.random() * 50000) + 50000
 // //       const totalGiven = Math.floor(Math.random() * 40000) + 40000
 // //       const remainingAmount = totalCollected - totalGiven
-      
+
 // //       months.push({
 // //         id: month + 1,
 // //         name: monthName,
@@ -88,7 +88,7 @@
 // //         status: 'completed' // All historical months are completed
 // //       })
 // //     }
-    
+
 // //     return months
 // //   }
 
@@ -96,18 +96,18 @@
 // //   const generateFinancialYears = () => {
 // //     const currentYear = new Date().getFullYear()
 // //     const years = {}
-    
+
 // //     // Generate data for current year and previous 4 years (total 5 years)
 // //     for (let i = 4; i >= 0; i--) {
 // //       const year = currentYear - i
 // //       if (year < 2024) continue // Start from 2024 or your preferred start year
-      
+
 // //       years[year] = {
 // //         title: `FY ${year}-${(year + 1).toString().slice(-2)}`,
 // //         data: generateYearData(year),
 // //         summary: {}
 // //       }
-      
+
 // //       // Calculate summary for the year
 // //       years[year].summary = {
 // //         totalCollected: years[year].data.reduce((sum, month) => sum + month.totalCollected, 0),
@@ -115,7 +115,7 @@
 // //         remainingAmount: years[year].data.reduce((sum, month) => sum + month.remainingAmount, 0)
 // //       }
 // //     }
-    
+
 // //     return years
 // //   }
 
@@ -125,23 +125,23 @@
 // //   useEffect(() => {
 // //     const isLoggedIn = localStorage.getItem('isLoggedIn')
 // //     const userData = localStorage.getItem('user')
-    
+
 // //     if (isLoggedIn !== 'true' || !userData) {
 // //       router.push('/login')
 // //       return
 // //     }
 
 // //     setUser(JSON.parse(userData))
-    
+
 // //     // Load members from localStorage and calculate stats
 // //     const savedMembers = JSON.parse(localStorage.getItem('members') || '[]')
-    
+
 // //     setStats({
 // //       totalMembers: savedMembers.length,
 // //       totalFund: 125000,
 // //       recentDeposits: 12500
 // //     })
-    
+
 // //     setMonthlyData(generateMonthlyData())
 // //     setHistoryData(generateFinancialYears())
 // //   }, [router])
@@ -239,7 +239,7 @@
 
 // //         <div className="bg-white rounded-lg shadow-md p-6">
 // //           <h2 className="text-xl font-semibold text-gray-800 mb-6">Monthly Collection - 25th of Each Month</h2>
-          
+
 // //           {/* Current Year Section */}
 // //           <div className="mb-8">
 // //             <h3 className="text-lg font-semibold text-gray-700 mb-4">Current Year ({new Date().getFullYear()})</h3>
@@ -254,7 +254,7 @@
 // //                     <h3 className="font-semibold text-gray-800 text-lg">{month.name} {month.year}</h3>
 // //                     {/* Status badge removed from here */}
 // //                   </div>
-                  
+
 // //                   <div className="space-y-3">
 // //                     <div className="flex justify-between text-sm">
 // //                       <span className="text-gray-600">Total Collected:</span>
@@ -262,14 +262,14 @@
 // //                         ₹ {formatNumber(month.totalCollected)}
 // //                       </span>
 // //                     </div>
-                    
+
 // //                     <div className="flex justify-between text-sm">
 // //                       <span className="text-gray-600">Total Given:</span>
 // //                       <span className="font-medium text-blue-600">
 // //                         ₹ {formatNumber(month.totalGiven)}
 // //                       </span>
 // //                     </div>
-                    
+
 // //                     <div className="flex justify-between text-sm">
 // //                       <span className="text-gray-600">Remaining Amount:</span>
 // //                       <span className={`font-medium ${getAmountColor(month.remainingAmount)}`}>
@@ -277,7 +277,7 @@
 // //                       </span>
 // //                     </div>
 // //                   </div>
-                  
+
 // //                   <div className="mt-4 pt-3 border-t border-gray-100">
 // //                     <button className="w-full bg-blue-600 text-white py-2 px-3 rounded-md text-sm hover:bg-blue-700 transition-colors">
 // //                       View Details
@@ -306,7 +306,7 @@
 // //                   <div className="text-4xl mb-3">📊</div>
 // //                   <h3 className="text-xl font-bold text-gray-800 mb-2">FY {new Date().getFullYear()}-{(new Date().getFullYear() + 1).toString().slice(-2)}</h3>
 // //                   <p className="text-gray-600 mb-3">Current Year Summary</p>
-                  
+
 // //                   <div className="space-y-2 text-sm w-full">
 // //                     <div className="flex justify-between">
 // //                       <span className="text-gray-600">Total Collected:</span>
@@ -327,7 +327,7 @@
 // //                       </span>
 // //                     </div>
 // //                   </div>
-                  
+
 // //                   <div className="mt-4 w-full">
 // //                     <button className="w-full bg-green-600 text-white py-2 px-3 rounded-md text-sm hover:bg-green-700 transition-colors">
 // //                       {expandedHistoryYear === new Date().getFullYear() ? 'Collapse' : 'View All Months'}
@@ -349,7 +349,7 @@
 // //                     <div className="text-4xl mb-3">📅</div>
 // //                     <h3 className="text-xl font-bold text-gray-800 mb-2">{historyData[year].title}</h3>
 // //                     <p className="text-gray-600 mb-3">Completed Financial Year</p>
-                    
+
 // //                     <div className="space-y-2 text-sm w-full">
 // //                       <div className="flex justify-between">
 // //                         <span className="text-gray-600">Total Collected:</span>
@@ -370,7 +370,7 @@
 // //                         </span>
 // //                       </div>
 // //                     </div>
-                    
+
 // //                     <div className="mt-4 w-full">
 // //                       <button className="w-full bg-purple-600 text-white py-2 px-3 rounded-md text-sm hover:bg-purple-700 transition-colors">
 // //                         {expandedHistoryYear === parseInt(year) ? 'Collapse' : 'View All Months'}
@@ -395,7 +395,7 @@
 // //                     Collapse
 // //                   </button>
 // //                 </div>
-                
+
 // //                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
 // //                   {historyData[expandedHistoryYear].data.map((month) => (
 // //                     <div 
@@ -407,7 +407,7 @@
 // //                         <h3 className="font-semibold text-gray-800 text-lg">{month.name} {month.year}</h3>
 // //                         {/* Status badge removed from here as well */}
 // //                       </div>
-                      
+
 // //                       <div className="space-y-3">
 // //                         <div className="flex justify-between text-sm">
 // //                           <span className="text-gray-600">Total Collected:</span>
@@ -415,14 +415,14 @@
 // //                             ₹ {formatNumber(month.totalCollected)}
 // //                           </span>
 // //                         </div>
-                        
+
 // //                         <div className="flex justify-between text-sm">
 // //                           <span className="text-gray-600">Total Given:</span>
 // //                           <span className="font-medium text-blue-600">
 // //                             ₹ {formatNumber(month.totalGiven)}
 // //                           </span>
 // //                         </div>
-                        
+
 // //                         <div className="flex justify-between text-sm">
 // //                           <span className="text-gray-600">Remaining Amount:</span>
 // //                           <span className={`font-medium ${getAmountColor(month.remainingAmount)}`}>
@@ -430,7 +430,7 @@
 // //                           </span>
 // //                         </div>
 // //                       </div>
-                      
+
 // //                       <div className="mt-4 pt-3 border-t border-gray-100">
 // //                         <button className="w-full bg-blue-600 text-white py-2 px-3 rounded-md text-sm hover:bg-blue-700 transition-colors">
 // //                           View Details
@@ -441,7 +441,7 @@
 // //                 </div>
 // //               </div>
 // //             )}
-            
+
 // //           </div>
 // //         </div>
 // //       </main>
@@ -477,13 +477,13 @@
 //     const currentDate = new Date()
 //     const currentMonth = currentDate.getMonth()
 //     const currentDay = currentDate.getDate()
-    
+
 //     for (let month = 0; month < 12; month++) {
 //       const date = new Date(currentYear, month, 25)
 //       const monthName = date.toLocaleDateString('en-US', { month: 'long' })
 //       const formattedDate = date.toISOString().split('T')[0]
 //       const monthKey = `${currentYear}-${String(month + 1).padStart(2, '0')}`
-      
+
 //       // Use default data since localStorage is disabled
 //       const allMembers = [
 //         { id: 1, name: 'Alice Johnson', isBorrower: false },
@@ -492,18 +492,18 @@
 //         { id: 4, name: 'David Wilson', isBorrower: false },
 //         { id: 5, name: 'Emma Davis', isBorrower: true },
 //       ]
-      
+
 //       const paidMembers = Math.floor(Math.random() * allMembers.length)
-      
+
 //       let totalCollected = 0
 //       let totalGiven = 0
-      
+
 //       // Use random data for all months
 //       totalCollected = Math.floor(Math.random() * 50000) + 50000
 //       totalGiven = Math.floor(Math.random() * 40000) + 40000
-      
+
 //       const remainingAmount = totalCollected - totalGiven
-      
+
 //       // Determine status - Remove completed status logic
 //       let status = 'upcoming'
 //       if (month === currentMonth) {
@@ -513,7 +513,7 @@
 //       } else {
 //         status = 'upcoming' // All past months are also upcoming, not completed
 //       }
-      
+
 //       months.push({
 //         id: month + 1,
 //         name: monthName,
@@ -528,28 +528,28 @@
 //         totalMembers: allMembers.length
 //       })
 //     }
-    
+
 //     return months
 //   }
 
 //   // Generate data for any historical year
 //   const generateYearData = (year) => {
 //     const months = []
-    
+
 //     for (let month = 0; month < 12; month++) {
 //       const date = new Date(year, month, 25)
 //       const monthName = date.toLocaleDateString('en-US', { month: 'long' })
 //       const formattedDate = date.toISOString().split('T')[0]
 //       const monthKey = `${year}-${String(month + 1).padStart(2, '0')}`
-      
+
 //       // Generate random paid members data for historical months
 //       const paidMembers = Math.floor(Math.random() * 5) + 1
 //       const totalMembers = 5
-      
+
 //       const totalCollected = Math.floor(Math.random() * 50000) + 50000
 //       const totalGiven = Math.floor(Math.random() * 40000) + 40000
 //       const remainingAmount = totalCollected - totalGiven
-      
+
 //       months.push({
 //         id: month + 1,
 //         name: monthName,
@@ -564,7 +564,7 @@
 //         totalMembers: totalMembers
 //       })
 //     }
-    
+
 //     return months
 //   }
 
@@ -572,24 +572,24 @@
 //   const generateFinancialYears = () => {
 //     const currentYear = new Date().getFullYear()
 //     const years = {}
-    
+
 //     for (let i = 4; i >= 0; i--) {
 //       const year = currentYear - i
 //       if (year < 2024) continue
-      
+
 //       years[year] = {
 //         title: `FY ${year}-${(year + 1).toString().slice(-2)}`,
 //         data: generateYearData(year),
 //         summary: {}
 //       }
-      
+
 //       years[year].summary = {
 //         totalCollected: years[year].data.reduce((sum, month) => sum + month.totalCollected, 0),
 //         totalGiven: years[year].data.reduce((sum, month) => sum + month.totalGiven, 0),
 //         remainingAmount: years[year].data.reduce((sum, month) => sum + month.remainingAmount, 0)
 //       }
 //     }
-    
+
 //     return years
 //   }
 
@@ -597,7 +597,7 @@
 //     // Simulate user authentication without localStorage
 //     const mockUser = { name: 'Admin User', email: 'admin@chitfund.com' }
 //     setUser(mockUser)
-    
+
 //     // Load members from mock data and calculate stats
 //     const mockMembers = [
 //       { id: 1, name: 'Alice Johnson', isBorrower: false },
@@ -606,16 +606,16 @@
 //       { id: 4, name: 'David Wilson', isBorrower: false },
 //       { id: 5, name: 'Emma Davis', isBorrower: true },
 //     ]
-    
+
 //     // Calculate mock fund totals
 //     const totalCollected = 125000
-    
+
 //     setStats({
 //       totalMembers: mockMembers.length,
 //       totalFund: totalCollected,
 //       recentDeposits: 12500
 //     })
-    
+
 //     setMonthlyData(generateMonthlyData())
 //     setHistoryData(generateFinancialYears())
 //   }, [router])
@@ -744,7 +744,7 @@
 
 //         <div className="bg-white rounded-lg shadow-md p-6">
 //           <h2 className="text-xl font-semibold text-gray-800 mb-6">Monthly Collection - 25th of Each Month</h2>
-          
+
 //           {/* Current Year Section */}
 //           <div className="mb-8">
 //             <h3 className="text-lg font-semibold text-gray-700 mb-4">Current Year ({new Date().getFullYear()})</h3>
@@ -759,7 +759,7 @@
 //                     <h3 className="font-semibold text-gray-800 text-lg">{month.name} {month.year}</h3>
 //                     {getPaymentStatusBadge(month)}
 //                   </div>
-                  
+
 //                   <div className="space-y-3">
 //                     <div className="flex justify-between text-sm">
 //                       <span className="text-gray-600">Total Collected:</span>
@@ -767,14 +767,14 @@
 //                         ₹ {formatNumber(month.totalCollected)}
 //                       </span>
 //                     </div>
-                    
+
 //                     <div className="flex justify-between text-sm">
 //                       <span className="text-gray-600">Total Given:</span>
 //                       <span className="font-medium text-blue-600">
 //                         ₹ {formatNumber(month.totalGiven)}
 //                       </span>
 //                     </div>
-                    
+
 //                     <div className="flex justify-between text-sm">
 //                       <span className="text-gray-600">Remaining Amount:</span>
 //                       <span className={`font-medium ${getAmountColor(month.remainingAmount)}`}>
@@ -782,7 +782,7 @@
 //                       </span>
 //                     </div>
 //                   </div>
-                  
+
 //                   <div className="mt-4 pt-3 border-t border-gray-100">
 //                     <button className="w-full bg-blue-600 text-white py-2 px-3 rounded-md text-sm hover:bg-blue-700 transition-colors">
 //                       Manage Payments
@@ -820,7 +820,7 @@
 //                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
 //                     </svg>
 //                   </div>
-                  
+
 //                   {expandedHistoryYear === year && (
 //                     <div className="p-4 border-t border-gray-200">
 //                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-6">
@@ -834,7 +834,7 @@
 //                               <h3 className="font-semibold text-gray-800 text-lg">{month.name} {month.year}</h3>
 //                               {getPaymentStatusBadge(month)}
 //                             </div>
-                            
+
 //                             <div className="space-y-3">
 //                               <div className="flex justify-between text-sm">
 //                                 <span className="text-gray-600">Total Collected:</span>
@@ -842,14 +842,14 @@
 //                                   ₹ {formatNumber(month.totalCollected)}
 //                                 </span>
 //                               </div>
-                              
+
 //                               <div className="flex justify-between text-sm">
 //                                 <span className="text-gray-600">Total Given:</span>
 //                                 <span className="font-medium text-blue-600">
 //                                   ₹ {formatNumber(month.totalGiven)}
 //                                 </span>
 //                               </div>
-                              
+
 //                               <div className="flex justify-between text-sm">
 //                                 <span className="text-gray-600">Remaining Amount:</span>
 //                                 <span className={`font-medium ${getAmountColor(month.remainingAmount)}`}>
@@ -857,7 +857,7 @@
 //                                 </span>
 //                               </div>
 //                             </div>
-                            
+
 //                             <div className="mt-4 pt-3 border-t border-gray-100">
 //                               <button className="w-full bg-gray-600 text-white py-2 px-3 rounded-md text-sm hover:bg-gray-700 transition-colors">
 //                                 View Details
@@ -866,7 +866,7 @@
 //                           </div>
 //                         ))}
 //                       </div>
-                      
+
 //                       {/* Year Summary - Matching the style but updated for history */}
 //                       <div className="mt-4 p-4 bg-gray-50 rounded-lg">
 //                         <h5 className="font-semibold text-gray-800 mb-2">Year Summary</h5>
@@ -926,17 +926,17 @@ export default function DashboardPage() {
     const currentYear = new Date().getFullYear()
     const currentDate = new Date()
     const currentMonth = currentDate.getMonth()
-    
+
     for (let month = 0; month < 12; month++) {
       const date = new Date(currentYear, month, 25)
       const monthName = date.toLocaleDateString('en-US', { month: 'long' })
       const formattedDate = date.toISOString().split('T')[0]
-      
+
       try {
         // Fetch or create monthly data from API
         const response = await monthsAPI.getByDate(formattedDate)
         const monthData = response.data.monthlyData
-        
+
         // Determine status
         let status = 'upcoming'
         if (month === currentMonth) {
@@ -944,7 +944,7 @@ export default function DashboardPage() {
         } else if (month < currentMonth) {
           status = monthData.paidMembers > 0 ? 'current' : 'upcoming'
         }
-        
+
         months.push({
           id: month + 1,
           name: monthName,
@@ -976,7 +976,7 @@ export default function DashboardPage() {
         })
       }
     }
-    
+
     return months
   }
 
@@ -984,19 +984,19 @@ export default function DashboardPage() {
   const generateFinancialYears = async () => {
     const currentYear = new Date().getFullYear()
     const years = {}
-    
+
     try {
       // Fetch all monthly data
       const response = await monthsAPI.getAll()
-      const allMonthsData = response.data
-      
+      const allMonthsData = response.data.data // data attribute holds the array
+
       // Group by year
       for (let i = 4; i >= 0; i--) {
         const year = currentYear - i
         if (year < 2024) continue
-        
+
         const yearMonths = allMonthsData.filter(m => m.year === year)
-        
+
         // Create months array for the year
         const monthsArray = []
         for (let month = 1; month <= 12; month++) {
@@ -1004,7 +1004,7 @@ export default function DashboardPage() {
           const date = new Date(year, month - 1, 25)
           const monthName = date.toLocaleDateString('en-US', { month: 'long' })
           const formattedDate = date.toISOString().split('T')[0]
-          
+
           monthsArray.push({
             id: month,
             name: monthName,
@@ -1019,7 +1019,7 @@ export default function DashboardPage() {
             totalMembers: monthData?.totalMembers || 0
           })
         }
-        
+
         years[year] = {
           title: `FY ${year}-${(year + 1).toString().slice(-2)}`,
           data: monthsArray,
@@ -1033,7 +1033,7 @@ export default function DashboardPage() {
     } catch (error) {
       console.error('Error fetching financial years:', error)
     }
-    
+
     return years
   }
 
@@ -1041,11 +1041,11 @@ export default function DashboardPage() {
     const loadDashboard = async () => {
       try {
         setLoading(true)
-        
+
         // Check authentication
         const userResponse = await authAPI.getMe()
         setUser(userResponse.data)
-        
+
         // Load dashboard stats
         const statsResponse = await dashboardAPI.getStats()
         setStats({
@@ -1053,18 +1053,21 @@ export default function DashboardPage() {
           totalFund: statsResponse.data.deposits.total,
           recentDeposits: statsResponse.data.deposits.recent
         })
-        
+
         // Load monthly data for current year
         const currentYearData = await generateMonthlyData()
         setMonthlyData(currentYearData)
-        
+
         // Load historical data
         const historicalData = await generateFinancialYears()
         setHistoryData(historicalData)
-        
+
       } catch (error) {
         console.error('Dashboard load error:', error)
-        router.push('/login')
+        // Only redirect if it's an auth error (401/403) or critical failure
+        if (error.response && (error.response.status === 401 || error.response.status === 403)) {
+          router.push('/login')
+        }
       } finally {
         setLoading(false)
       }
@@ -1139,8 +1142,8 @@ export default function DashboardPage() {
             <h1 className="text-2xl font-bold text-gray-900">Fund Manager Dashboard</h1>
             <div className="flex items-center space-x-4">
               <span className="text-gray-700">Welcome, {user.name}</span>
-              <button 
-                onClick={handleLogout} 
+              <button
+                onClick={handleLogout}
                 className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700"
               >
                 Logout
@@ -1180,15 +1183,15 @@ export default function DashboardPage() {
         <div className="bg-white rounded-lg shadow-md p-6 mb-8">
           <h2 className="text-xl font-semibold text-gray-800 mb-4">Quick Actions</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Link 
-              href="/members" 
+            <Link
+              href="/members"
               className="bg-white border border-gray-200 rounded-lg p-4 hover:bg-gray-50 hover:border-blue-300 transition-colors"
             >
               <h3 className="font-semibold text-gray-800 mb-2">👥 Manage Members</h3>
               <p className="text-sm text-gray-600">Add, remove, or edit members</p>
             </Link>
-            <Link 
-              href="/deposits" 
+            <Link
+              href="/deposits"
               className="bg-white border border-gray-200 rounded-lg p-4 hover:bg-gray-50 hover:border-blue-300 transition-colors"
             >
               <h3 className="font-semibold text-gray-800 mb-2">💰 Deposit Management</h3>
@@ -1199,13 +1202,13 @@ export default function DashboardPage() {
 
         <div className="bg-white rounded-lg shadow-md p-6">
           <h2 className="text-xl font-semibold text-gray-800 mb-6">Monthly Collection - 25th of Each Month</h2>
-          
+
           {/* Current Year Section */}
           <div className="mb-8">
             <h3 className="text-lg font-semibold text-gray-700 mb-4">Current Year ({new Date().getFullYear()})</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {monthlyData.length > 0 ? monthlyData.map((month) => (
-                <div 
+                <div
                   key={month.id}
                   onClick={() => handleMonthClick(month)}
                   className="border border-gray-200 rounded-lg p-4 hover:shadow-lg hover:border-blue-300 transition-all cursor-pointer"
@@ -1214,7 +1217,7 @@ export default function DashboardPage() {
                     <h3 className="font-semibold text-gray-800 text-lg">{month.name} {month.year}</h3>
                     {getPaymentStatusBadge(month)}
                   </div>
-                  
+
                   <div className="space-y-3">
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-600">Total Collected:</span>
@@ -1222,14 +1225,14 @@ export default function DashboardPage() {
                         ₹ {formatNumber(month.totalCollected)}
                       </span>
                     </div>
-                    
+
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-600">Total Given:</span>
                       <span className="font-medium text-blue-600">
                         ₹ {formatNumber(month.totalGiven)}
                       </span>
                     </div>
-                    
+
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-600">Remaining Amount:</span>
                       <span className={`font-medium ${getAmountColor(month.remainingAmount)}`}>
@@ -1237,7 +1240,7 @@ export default function DashboardPage() {
                       </span>
                     </div>
                   </div>
-                  
+
                   <div className="mt-4 pt-3 border-t border-gray-100">
                     <button className="w-full bg-blue-600 text-white py-2 px-3 rounded-md text-sm hover:bg-blue-700 transition-colors">
                       Manage Payments
@@ -1259,28 +1262,27 @@ export default function DashboardPage() {
             <div className="space-y-4">
               {Object.entries(historyData).map(([year, yearData]) => (
                 <div key={year} className="border border-gray-200 rounded-lg">
-                  <div 
+                  <div
                     className="p-4 bg-gray-50 hover:bg-gray-100 cursor-pointer flex justify-between items-center"
                     onClick={() => handleHistoryYearClick(year)}
                   >
                     <h4 className="font-semibold text-gray-800">{yearData.title}</h4>
-                    <svg 
-                      className={`w-5 h-5 transform transition-transform ${
-                        expandedHistoryYear === year ? 'rotate-180' : ''
-                      }`} 
-                      fill="none" 
-                      stroke="currentColor" 
+                    <svg
+                      className={`w-5 h-5 transform transition-transform ${expandedHistoryYear === year ? 'rotate-180' : ''
+                        }`}
+                      fill="none"
+                      stroke="currentColor"
                       viewBox="0 0 24 24"
                     >
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                     </svg>
                   </div>
-                  
+
                   {expandedHistoryYear === year && (
                     <div className="p-4 border-t border-gray-200">
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-6">
                         {yearData.data.map((month) => (
-                          <div 
+                          <div
                             key={month.id}
                             onClick={() => handleHistoryMonthClick(month)}
                             className="border border-gray-200 rounded-lg p-4 hover:shadow-lg hover:border-blue-300 transition-all cursor-pointer"
@@ -1289,7 +1291,7 @@ export default function DashboardPage() {
                               <h3 className="font-semibold text-gray-800 text-lg">{month.name} {month.year}</h3>
                               {getPaymentStatusBadge(month)}
                             </div>
-                            
+
                             <div className="space-y-3">
                               <div className="flex justify-between text-sm">
                                 <span className="text-gray-600">Total Collected:</span>
@@ -1297,14 +1299,14 @@ export default function DashboardPage() {
                                   ₹ {formatNumber(month.totalCollected)}
                                 </span>
                               </div>
-                              
+
                               <div className="flex justify-between text-sm">
                                 <span className="text-gray-600">Total Given:</span>
                                 <span className="font-medium text-blue-600">
                                   ₹ {formatNumber(month.totalGiven)}
                                 </span>
                               </div>
-                              
+
                               <div className="flex justify-between text-sm">
                                 <span className="text-gray-600">Remaining Amount:</span>
                                 <span className={`font-medium ${getAmountColor(month.remainingAmount)}`}>
@@ -1312,7 +1314,7 @@ export default function DashboardPage() {
                                 </span>
                               </div>
                             </div>
-                            
+
                             <div className="mt-4 pt-3 border-t border-gray-100">
                               <button className="w-full bg-gray-600 text-white py-2 px-3 rounded-md text-sm hover:bg-gray-700 transition-colors">
                                 View Details
@@ -1321,7 +1323,7 @@ export default function DashboardPage() {
                           </div>
                         ))}
                       </div>
-                      
+
                       <div className="mt-4 p-4 bg-gray-50 rounded-lg">
                         <h5 className="font-semibold text-gray-800 mb-2">Year Summary</h5>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">

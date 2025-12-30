@@ -10,15 +10,15 @@ export async function POST(request, { params }) {
     await connectDB();
     const { date } = await params; // FIXED: await params
     const body = await request.json();
-    
+
     const { memberId, amount, guarantors } = body;
-    
+
     const dateObj = new Date(date);
     const month = dateObj.getMonth() + 1;
     const year = dateObj.getFullYear();
-    
+
     const monthlyData = await MonthlyData.getOrCreate(month, year);
-    
+
     const member = await Member.findById(memberId);
     if (!member) {
       return NextResponse.json(
@@ -26,11 +26,11 @@ export async function POST(request, { params }) {
         { status: 404 }
       );
     }
-    
+
     const previousPrincipal = member.currentPrincipal || 0;
     const newPrincipal = previousPrincipal + amount;
     const loanType = member.isBorrower ? 'additional' : 'initial';
-    
+
     const borrowing = await Borrowing.create({
       monthlyData: monthlyData._id,
       member: memberId,
@@ -40,11 +40,11 @@ export async function POST(request, { params }) {
       newPrincipal,
       loanType
     });
-    
+
     member.isBorrower = true;
     member.borrowedAmount = (member.borrowedAmount || 0) + amount;
     member.currentPrincipal = newPrincipal;
-    
+
     member.loanHistory.push({
       date: new Date(),
       amount,
@@ -52,9 +52,17 @@ export async function POST(request, { params }) {
       guarantors: guarantors || [],
       monthlyData: monthlyData._id
     });
-    
+
     await member.save();
-    
+
+    // Update MonthlyData stats
+    const allBorrowings = await Borrowing.find({ monthlyData: monthlyData._id, status: 'active' });
+    const totalGiven = allBorrowings.reduce((sum, b) => sum + (Number(b.amount) || 0), 0);
+
+    monthlyData.totalGiven = totalGiven;
+    monthlyData.remainingAmount = (monthlyData.totalCollected || 0) - monthlyData.totalGiven;
+    await monthlyData.save();
+
     return NextResponse.json({
       success: true,
       data: borrowing

@@ -14,21 +14,86 @@ export async function GET(request) {
     const { searchParams } = new URL(request.url);
     const year = searchParams.get('year');
     const status = searchParams.get('status');
+    const details = searchParams.get('details') === 'true';
 
-    const query = {};
+    const matchStage = {};
+    if (year) matchStage.year = parseInt(year);
+    if (status) matchStage.status = status;
 
-    if (year) {
-      query.year = parseInt(year);
+    let monthlyData;
+
+    if (details) {
+      // Legacy path for full details (if ever used)
+      monthlyData = await MonthlyData.find(matchStage)
+        .populate('payments')
+        .populate('borrowings')
+        .sort({ year: -1, month: -1 });
+    } else {
+      // Optimized Aggregation Path for Dashboard
+      monthlyData = await MonthlyData.aggregate([
+        { $match: matchStage },
+        // Lookup Payments to calculate Total Collected and Paid Members
+        {
+          $lookup: {
+            from: 'payments',
+            let: { monthId: '$_id' },
+            pipeline: [
+              {
+                $match: {
+                  $expr: { $eq: ['$monthlyData', '$$monthId'] },
+                  status: 'completed'
+                }
+              },
+              {
+                $group: {
+                  _id: null,
+                  totalCollected: { $sum: '$totalAmount' },
+                  count: { $sum: 1 }
+                }
+              }
+            ],
+            as: 'paymentStats'
+          }
+        },
+        // Lookup Borrowings to calculate Total Given
+        {
+          $lookup: {
+            from: 'borrowings',
+            let: { monthId: '$_id' },
+            pipeline: [
+              {
+                $match: {
+                  $expr: { $eq: ['$monthlyData', '$$monthId'] },
+                  status: 'active'
+                }
+              },
+              {
+                $group: {
+                  _id: null,
+                  totalGiven: { $sum: '$amount' }
+                }
+              }
+            ],
+            as: 'borrowingStats'
+          }
+        },
+        // Shape the output, merging stored fields with calculated stats
+        {
+          $addFields: {
+            totalCollected: { $ifNull: [{ $arrayElemAt: ['$paymentStats.totalCollected', 0] }, 0] },
+            paidMembers: { $ifNull: [{ $arrayElemAt: ['$paymentStats.count', 0] }, 0] },
+            totalGiven: { $ifNull: [{ $arrayElemAt: ['$borrowingStats.totalGiven', 0] }, 0] }
+          }
+        },
+        {
+          $addFields: {
+            remainingAmount: { $subtract: ['$totalCollected', '$totalGiven'] }
+          }
+        },
+        { $sort: { year: -1, month: -1 } },
+        { $project: { paymentStats: 0, borrowingStats: 0 } } // Remove temp fields
+      ]);
     }
-
-    if (status) {
-      query.status = status;
-    }
-
-    const monthlyData = await MonthlyData.find(query)
-      .populate('payments')
-      .populate('borrowings')
-      .sort({ year: -1, month: -1 });
 
     // Calculate summary statistics
     const summary = {
@@ -54,7 +119,7 @@ export async function GET(request) {
   } catch (error) {
     console.error('Get monthly data error:', error);
     return NextResponse.json(
-      { success: false, message: 'Server error. Please try again.' },
+      { success: false, message: 'Server error. Please try again.', error: error.message },
       { status: 500 }
     );
   }

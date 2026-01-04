@@ -250,12 +250,111 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { authAPI, membersAPI } from '@/lib/api-client'
 
+// Modal Component for Defaulter History
+const DefaulterHistoryModal = ({ member, onClose, onUpdate }) => {
+  const [loading, setLoading] = useState(null) // monthId being updated
+
+  const handleAddPenalty = async (monthId, monthName, currentAmount) => {
+    const amount = prompt(`Enter penalty amount for ${monthName}:`, currentAmount || 0)
+    if (amount === null) return // Cancelled
+
+    const numAmount = Number(amount)
+    if (isNaN(numAmount) || numAmount < 0) {
+      alert('Please enter a valid amount')
+      return
+    }
+
+    try {
+      setLoading(monthId)
+      // Call penalty API
+      const response = await fetch('/api/members/penalty', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          memberId: member._id,
+          monthId,
+          monthName,
+          amount: numAmount
+        })
+      })
+
+      const data = await response.json()
+      if (data.success) {
+        // Refresh member data
+        onUpdate()
+      } else {
+        alert(data.error || 'Failed to update penalty')
+      }
+    } catch (error) {
+      console.error('Error adding penalty:', error)
+      alert('Failed to update penalty')
+    } finally {
+      setLoading(null)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 max-w-lg w-full max-h-[80vh] overflow-y-auto">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-xl font-bold text-red-600">
+            Unpaid Months History - {member.name}
+          </h3>
+          <button onClick={onClose} className="text-gray-500 hover:text-gray-700">✕</button>
+        </div>
+
+        {member.unpaidMonths && member.unpaidMonths.length > 0 ? (
+          <div className="space-y-4">
+            <p className="text-gray-600 mb-2">
+              This member has missed payments for the following months:
+            </p>
+            <div className="border rounded-lg divide-y">
+              {member.unpaidMonths.map((month) => (
+                <div key={month._id} className="p-3 flex justify-between items-center hover:bg-gray-50">
+                  <div>
+                    <div className="font-medium text-gray-800">{month.name}</div>
+                    <div className="text-sm text-red-500">Payment Pending</div>
+                    {month.penaltyAmount > 0 && (
+                      <div className="text-xs text-orange-600 font-medium">
+                        Penalty Applied: ₹{month.penaltyAmount}
+                      </div>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => handleAddPenalty(month._id, month.name, month.penaltyAmount)}
+                    disabled={loading === month._id}
+                    className="bg-red-100 text-red-700 px-3 py-1 rounded text-sm hover:bg-red-200 border border-red-200"
+                  >
+                    {loading === month._id ? 'Saving...' : (month.penaltyAmount > 0 ? 'Update Penalty' : 'Add Penalty')}
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <p className="text-gray-500 text-center py-4">No unpaid months found in recent history.</p>
+        )}
+
+        <div className="mt-6 text-right">
+          <button
+            onClick={onClose}
+            className="bg-gray-200 text-gray-800 px-4 py-2 rounded hover:bg-gray-300"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function Members() {
   const [members, setMembers] = useState([])
+  const [selectedDefaulter, setSelectedDefaulter] = useState(null)
   const [loading, setLoading] = useState(true)
-  const [newMember, setNewMember] = useState({ name: '', email: '', phone: '' })
+  const [newMember, setNewMember] = useState({ name: '', address: '', phone: '' })
   const [editingMember, setEditingMember] = useState(null)
-  const [editForm, setEditForm] = useState({ name: '', email: '', phone: '' })
+  const [editForm, setEditForm] = useState({ name: '', address: '', phone: '' })
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const router = useRouter()
@@ -288,7 +387,7 @@ export default function Members() {
   }, [router])
 
   const addMember = async () => {
-    if (!newMember.name || !newMember.email || !newMember.phone) {
+    if (!newMember.name || !newMember.address || !newMember.phone) {
       setError('Please fill all fields')
       return
     }
@@ -298,7 +397,7 @@ export default function Members() {
       setSuccess('')
       await membersAPI.create(newMember)
       setSuccess('Member added successfully!')
-      setNewMember({ name: '', email: '', phone: '' })
+      setNewMember({ name: '', address: '', phone: '' })
       await loadMembers()
 
       // Clear success message after 3 seconds
@@ -330,18 +429,18 @@ export default function Members() {
     setEditingMember(member._id)
     setEditForm({
       name: member.name,
-      email: member.email,
+      address: member.address,
       phone: member.phone
     })
   }
 
   const cancelEdit = () => {
     setEditingMember(null)
-    setEditForm({ name: '', email: '', phone: '' })
+    setEditForm({ name: '', address: '', phone: '' })
   }
 
   const saveEdit = async (id) => {
-    if (!editForm.name || !editForm.email || !editForm.phone) {
+    if (!editForm.name || !editForm.address || !editForm.phone) {
       setError('Please fill all fields')
       return
     }
@@ -352,7 +451,7 @@ export default function Members() {
       await membersAPI.update(id, editForm)
       setSuccess('Member updated successfully!')
       setEditingMember(null)
-      setEditForm({ name: '', email: '', phone: '' })
+      setEditForm({ name: '', address: '', phone: '' })
       await loadMembers()
 
       setTimeout(() => setSuccess(''), 3000)
@@ -420,10 +519,10 @@ export default function Members() {
               className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
             />
             <input
-              type="email"
-              placeholder="Email"
-              value={newMember.email}
-              onChange={(e) => setNewMember({ ...newMember, email: e.target.value })}
+              type="text"
+              placeholder="Address"
+              value={newMember.address}
+              onChange={(e) => setNewMember({ ...newMember, address: e.target.value })}
               className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
             />
             <input
@@ -452,7 +551,7 @@ export default function Members() {
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Address</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phone</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Join Date</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
@@ -470,19 +569,29 @@ export default function Members() {
                           className="px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 text-black"
                         />
                       ) : (
-                        member.name
+                        <span
+                          className={`cursor-pointer hover:underline ${member.isDefaulter ? 'text-red-600 font-bold' : 'text-gray-900'}`}
+                          onClick={() => {
+                            if (member.isDefaulter) {
+                              setSelectedDefaulter(member)
+                            }
+                          }}
+                          title={member.isDefaulter ? "Click to view unpaid history" : ""}
+                        >
+                          {member.name}
+                        </span>
                       )}
                     </td>
                     <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
                       {editingMember === member._id ? (
                         <input
-                          type="email"
-                          value={editForm.email}
-                          onChange={(e) => handleEditChange('email', e.target.value)}
+                          type="text"
+                          value={editForm.address}
+                          onChange={(e) => handleEditChange('address', e.target.value)}
                           className="px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 text-black"
                         />
                       ) : (
-                        member.email
+                        member.address
                       )}
                     </td>
                     <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
@@ -546,6 +655,37 @@ export default function Members() {
           </div>
         </div>
       </main>
+
+      {/* Defaulter Modal */}
+      {selectedDefaulter && (
+        <DefaulterHistoryModal
+          member={selectedDefaulter}
+          onClose={() => setSelectedDefaulter(null)}
+          onUpdate={async () => {
+            // Reload members to reflect changes (and potentially updated penalties)
+            await loadMembers()
+            // We need to re-find the selected defaulter from the new list to update the modal content
+            // Identifying by ID since the member object reference changes
+            // Actually, loadMembers updates 'members' state. 
+            // We should update 'selectedDefaulter' with the new data.
+            // But we can't easily grab it here without waiting.
+            // Simpler: The modal stays open, but we need fresh data passed to it.
+            // We can do: setSelectedDefaulter(null) then open again? No.
+            // Better: Pass a refresh handler that handles re-fetching and updating local selectedDefaulter.
+
+            // For now, loadMembers() runs. The modal uses 'selectedDefaulter' state.
+            // We should update selectedDefaulter with the fresh object from the NEW members list.
+            // This requires an effect or finding it.
+            // Let's rely on loadMembers finishing, then finding the member:
+            const response = await membersAPI.getAll()
+            setMembers(response.data)
+            const updatedDefaulter = response.data.find(m => m._id === selectedDefaulter._id)
+            if (updatedDefaulter) {
+              setSelectedDefaulter(updatedDefaulter)
+            }
+          }}
+        />
+      )}
     </div>
   )
 }

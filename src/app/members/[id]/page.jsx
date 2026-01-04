@@ -213,7 +213,7 @@ export default function MemberDetails() {
                     <div className="flex justify-between items-center py-4">
                         <div>
                             <h1 className="text-2xl font-bold text-gray-900">{member.name}</h1>
-                            <p className="text-sm text-gray-500">{member.phone} | {member.email}</p>
+                            <p className="text-sm text-gray-500">{member.phone} | {member.address}</p>
                         </div>
                         <div className="flex gap-2">
                             <button

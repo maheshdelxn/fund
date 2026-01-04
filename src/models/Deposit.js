@@ -33,7 +33,7 @@ const depositSchema = new mongoose.Schema({
   shareAmount: {
     type: Number,
     required: true,
-    default: function() {
+    default: function () {
       return this.shares * 5000;
     }
   },
@@ -60,9 +60,9 @@ depositSchema.index({ date: -1 });
 depositSchema.index({ status: 1 });
 
 // Calculate share amount before saving
-depositSchema.pre('save', function() {
+depositSchema.pre('save', function () {
   if (this.shares && !this.shareAmount) {
-    this.shareAmount = this.shares * 1000;
+    this.shareAmount = this.shares * 5000;
   }
 });
 delete mongoose.models.Deposit

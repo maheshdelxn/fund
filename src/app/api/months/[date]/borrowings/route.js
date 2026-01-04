@@ -19,6 +19,15 @@ export async function POST(request, { params }) {
 
     const monthlyData = await MonthlyData.getOrCreate(month, year);
 
+    // Check for insufficient funds
+    const availableBalance = (monthlyData.totalCollected || 0) + (monthlyData.previousMonthRemaining || 0) - (monthlyData.totalGiven || 0);
+    if (amount > availableBalance) {
+      return NextResponse.json(
+        { success: false, error: `Insufficient funds. Available balance is ₹${availableBalance.toLocaleString()}` },
+        { status: 400 }
+      );
+    }
+
     const member = await Member.findById(memberId);
     if (!member) {
       return NextResponse.json(
@@ -60,7 +69,8 @@ export async function POST(request, { params }) {
     const totalGiven = allBorrowings.reduce((sum, b) => sum + (Number(b.amount) || 0), 0);
 
     monthlyData.totalGiven = totalGiven;
-    monthlyData.remainingAmount = (monthlyData.totalCollected || 0) - monthlyData.totalGiven;
+    // remainingAmount is calculated in pre-save hook, but we can set it here for clarity or rely on hook
+    monthlyData.remainingAmount = (monthlyData.totalCollected || 0) + (monthlyData.previousMonthRemaining || 0) - monthlyData.totalGiven;
     await monthlyData.save();
 
     return NextResponse.json({

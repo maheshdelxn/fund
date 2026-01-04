@@ -142,11 +142,22 @@ export default function MonthDetailsPage() {
     const currentShareAmount = memberShares * SHARE_AMOUNT
 
     if (existingPayment?.paid) {
+      // Even if paid, we should reconcile with current loans to see if interest changed (e.g. new loan added after payment)
+      // Use the stored Muddal Paid amount to calculate what the interest SHOULD be now
+      const muddalPaid = existingPayment.calculatedMuddal || existingPayment.muddalPaid || 0
+      const principalBeforeLoans = getPrincipalBeforeMonthLoans(member)
+      const totalBorrowedThisMonth = getTotalBorrowingThisMonth(memberId)
+
+      const remainingOldPrincipal = Math.max(0, principalBeforeLoans - muddalPaid)
+      const interestOnPrincipal = Math.ceil(remainingOldPrincipal * (INTEREST_RATE / 100))
+      const interestOnNewLoan = Math.ceil(totalBorrowedThisMonth * (INTEREST_RATE / 100))
+      const recalculatedInterest = interestOnPrincipal + interestOnNewLoan
+
       return {
         shareAmount: existingPayment.shareAmount || currentShareAmount,
-        muddalPaid: existingPayment.calculatedMuddal || existingPayment.muddalPaid || 0,
-        interestAmount: existingPayment.interestAmount || 0,
-        totalCompulsory: (existingPayment.shareAmount || currentShareAmount) + (existingPayment.interestAmount || 0),
+        muddalPaid: muddalPaid,
+        interestAmount: recalculatedInterest, // Use recalculated interest to reflect new loans
+        totalCompulsory: (existingPayment.shareAmount || currentShareAmount) + recalculatedInterest,
         principalBeforeLoans: existingPayment.principalBefore || 0,
         currentPrincipalWithLoans: member.currentPrincipal || 0,
         newPrincipal: existingPayment.principalAfter || member.currentPrincipal || 0,
@@ -177,7 +188,48 @@ export default function MonthDetailsPage() {
     const currentPrincipalWithLoans = principalBeforeLoans + totalBorrowedThisMonth
 
     const principalAfterMuddal = Math.max(0, currentPrincipalWithLoans - muddalPaid)
-    const interestAmount = Math.round(principalAfterMuddal * (INTEREST_RATE / 100))
+
+    // Standard interest on (Principal - MuddalPaid)
+    // Note: Principal here includes everything (Previous + New Loans)
+    // But usually, existing principal interest is separate from new loan interest?
+    // User request: "interest of 20000 will add to existing interest"
+    // The 'currentPrincipalWithLoans' ALREADY includes 'totalBorrowedThisMonth'.
+    // If 'principalBeforeLoans' had interest, and 'newLoan' has interest.
+    // Logic: 
+    // Interest = (PrincipalBeforeLoans + BorrowedThisMonth - MuddalPaid) * Rate?
+    // OR
+    // Interest = (PrincipalBeforeLoans - MuddalPaid) * Rate + (BorrowedThisMonth * Rate)?
+
+    // User screenshot suggests:
+    // Existing Loan Interest (on 70k) + New Loan Interest (on 20k).
+    // If 10k muddal paid, usually it reduces principal before interest? 
+    // Or is muddal paid applied at end of month?
+    // Standard practice: Interest is on Opening Balance usually.
+    // If muddal paid during month, interest might be on reduced balance.
+
+    // Let's stick to simple logic that matches the screenshot:
+    // Total Interest = (Opening Principal * Rate) + (New Loan * Rate) - (Adjustment for partial payment?)
+
+    // Current Code: 
+    // Interest = (currentPrincipalWithLoans - muddalPaid) * Rate
+    // = (70k + 20k - 10k) * 2% = 80k * 2% = 1600.
+    // But screenshot shows 1800 (1400 + 400).
+    // This implies Muddal Payment does NOT reduce interest for the current month!
+    // Interest is charged on the FULL amount before repayment?
+    // OR Interest is charged on Opening Balance (70k) + New Loan (20k).
+    // 70k * 2% = 1400. 20k * 2% = 400. Total = 1800.
+    // Repayment of 10k happens, but interest is still due on the full amount for that month.
+
+    // REFINED LOGIC: 
+    // Interest on Old Principal = (Old - Paid) * Rate
+    // Interest on New Loan = New * Rate
+    const remainingOldPrincipal = Math.max(0, principalBeforeLoans - muddalPaid)
+    const interestOnPrincipal = Math.ceil(remainingOldPrincipal * (INTEREST_RATE / 100))
+    const interestOnNewLoan = Math.ceil(totalBorrowedThisMonth * (INTEREST_RATE / 100))
+    const interestAmount = interestOnPrincipal + interestOnNewLoan
+
+    // const interestAmount = Math.round(principalAfterMuddal * (INTEREST_RATE / 100)) // OLD LOGIC
+
     const totalCompulsory = currentShareAmount + interestAmount
     const total = currentShareAmount + muddalPaid + interestAmount
 
@@ -245,22 +297,26 @@ export default function MonthDetailsPage() {
           </div>
         </div>
 
-        <div class="summary-grid">
-          <div class="summary-item">
-            <div class="summary-label">एकूण भाग रक्कम</div>
-            <div class="summary-value">₹${monthStats.totalShareCollection.toLocaleString()}</div>
+        <div className="summary-grid">
+          <div className="summary-item">
+            <div className="summary-label">मागील शिल्लक</div>
+            <div className="summary-value text-gray-600">₹{(monthData.previousMonthRemaining || 0).toLocaleString()}</div>
           </div>
-          <div class="summary-item">
-            <div class="summary-label">एकूण व्याज</div>
-            <div class="summary-value">₹${monthStats.totalInterest.toLocaleString()}</div>
+          <div className="summary-item">
+            <div className="summary-label">एकूण संकलित</div>
+            <div className="summary-value" style="color: #059669;">₹${monthStats.totalPaid.toLocaleString()}</div>
           </div>
-          <div class="summary-item">
-            <div class="summary-label">एकूण दंड</div>
-            <div class="summary-value">₹${monthStats.totalPenalties.toLocaleString()}</div>
+          <div className="summary-item">
+            <div className="summary-label">एकूण उपलब्ध</div>
+            <div className="summary-value text-blue-600">₹${((monthData.previousMonthRemaining || 0) + monthStats.totalPaid).toLocaleString()}</div>
           </div>
-          <div class="summary-item">
-            <div class="summary-label">एकूण संकलित</div>
-            <div class="summary-value" style="color: #059669;">₹${monthStats.totalPaid.toLocaleString()}</div>
+          <div className="summary-item">
+            <div className="summary-label">वाटप केलेले कर्ज</div>
+            <div className="summary-value text-orange-600">₹${monthStats.totalBorrowedThisMonth.toLocaleString()}</div>
+          </div>
+          <div className="summary-item">
+            <div className="summary-label">शिल्लक रक्कम</div>
+            <div className="summary-value text-purple-600">₹${(((monthData.previousMonthRemaining || 0) + monthStats.totalPaid) - monthStats.totalBorrowedThisMonth).toLocaleString()}</div>
           </div>
         </div>
 

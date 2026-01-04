@@ -44,6 +44,10 @@ const monthlyDataSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
+  previousMonthRemaining: {
+    type: Number,
+    default: 0
+  },
   status: {
     type: String,
     enum: ['upcoming', 'current', 'completed', 'archived'],
@@ -71,31 +75,43 @@ monthlyDataSchema.index({ date: -1 });
 monthlyDataSchema.index({ status: 1 });
 
 // Calculate remaining amount before saving - FIXED
-monthlyDataSchema.pre('save', function() {
-  this.remainingAmount = this.totalCollected - this.totalGiven;
+monthlyDataSchema.pre('save', function () {
+  this.remainingAmount = (this.totalCollected + (this.previousMonthRemaining || 0)) - this.totalGiven;
 });
 
 // Static method to get or create monthly data
-monthlyDataSchema.statics.getOrCreate = async function(month, year) {
+monthlyDataSchema.statics.getOrCreate = async function (month, year) {
   try {
     let monthlyData = await this.findOne({ month, year });
-    
+
     if (!monthlyData) {
       const date = new Date(year, month - 1, 25);
-      const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 
-                          'July', 'August', 'September', 'October', 'November', 'December'];
+      const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+        'July', 'August', 'September', 'October', 'November', 'December'];
       const monthName = monthNames[month - 1];
-      
+
+      // Fetch previous month data
+      let prevMonth = month - 1;
+      let prevYear = year;
+      if (prevMonth === 0) {
+        prevMonth = 12;
+        prevYear = year - 1;
+      }
+
+      const previousMonthData = await this.findOne({ month: prevMonth, year: prevYear });
+      const previousMonthRemaining = previousMonthData ? previousMonthData.remainingAmount : 0;
+
       monthlyData = await this.create({
         month,
         year,
         monthName,
         date,
         collectionDate: date,
+        previousMonthRemaining,
         status: 'upcoming'
       });
     }
-    
+
     return monthlyData;
   } catch (error) {
     console.error('Error in getOrCreate:', error);

@@ -321,19 +321,10 @@ export default function Deposits() {
             
             <input
               type="number"
-              placeholder="Amount (₹) *"
+              placeholder="Total Amount (₹) - Auto Calculated"
               value={newDeposit.amount}
-              onChange={(e) => {
-                const amount = e.target.value;
-                const calculatedShares = amount ? Math.floor(parseInt(amount) / 1000) : '';
-                setNewDeposit({
-                  ...newDeposit, 
-                  amount: amount,
-                  shares: calculatedShares,
-                  shareAmount: calculatedShares ? (calculatedShares * 1000).toString() : ''
-                })
-              }}
-              className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
+              readOnly
+              className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-black bg-gray-50"
             />
             
             <input
@@ -342,21 +333,15 @@ export default function Deposits() {
               value={newDeposit.shares}
               onChange={(e) => {
                 const shares = e.target.value;
+                const val = shares ? parseInt(shares) * 5000 : '';
                 setNewDeposit({
                   ...newDeposit, 
                   shares: shares,
-                  shareAmount: shares ? (parseInt(shares) * 1000).toString() : ''
+                  amount: val.toString(),
+                  shareAmount: val.toString()
                 })
               }}
               className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
-            />
-            
-            <input
-              type="number"
-              placeholder="Share Amount (₹)"
-              value={newDeposit.shareAmount}
-              readOnly
-              className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-black bg-gray-50"
             />
             
             <input
@@ -467,8 +452,8 @@ export default function Deposits() {
                           <input
                             type="number"
                             value={editForm.amount}
-                            onChange={(e) => setEditForm({...editForm, amount: e.target.value})}
-                            className="px-2 py-1 border border-gray-300 rounded-md w-full text-black"
+                            readOnly
+                            className="px-2 py-1 border border-gray-300 rounded-md w-full text-black bg-gray-50"
                           />
                         ) : (
                           formatCurrency(deposit.amount)
@@ -482,10 +467,12 @@ export default function Deposits() {
                             value={editForm.shares}
                             onChange={(e) => {
                               const shares = e.target.value;
+                              const val = shares ? parseInt(shares) * 5000 : '';
                               setEditForm({
                                 ...editForm, 
                                 shares: shares,
-                                shareAmount: shares ? (parseInt(shares) * 1000).toString() : ''
+                                amount: val.toString(),
+                                shareAmount: val.toString()
                               })
                             }}
                             className="px-2 py-1 border border-gray-300 rounded-md w-full text-black"

@@ -41,7 +41,6 @@ const memberSchema = new mongoose.Schema({
   },
   email: {
     type: String,
-    required: [true, 'Please provide email'],
     trim: true,
     lowercase: true
   },
@@ -77,6 +76,21 @@ const memberSchema = new mongoose.Schema({
     default: false
   },
   loanHistory: [loanHistorySchema],
+  unpaidMonthPenalties: [{
+    monthId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'MonthlyData'
+    },
+    monthName: String, // e.g. "January 2024"
+    amount: {
+      type: Number,
+      default: 0
+    },
+    isPaid: {
+      type: Boolean,
+      default: false
+    }
+  }],
   totalDeposits: {
     type: Number,
     default: 0
@@ -91,6 +105,7 @@ const memberSchema = new mongoose.Schema({
   },
   address: {
     type: String,
+    required: [true, 'Please provide address'],
     trim: true
   },
   notes: {
@@ -110,12 +125,12 @@ memberSchema.index({ phone: 1 });
 memberSchema.index({ isActive: 1 });
 
 // Virtual for display serial number
-memberSchema.virtual('displaySerialNo').get(function() {
+memberSchema.virtual('displaySerialNo').get(function () {
   return this.serialNo;
 });
 
 // Method to sync totalBorrowed with borrowedAmount - FIXED
-memberSchema.pre('save', function() {
+memberSchema.pre('save', function () {
   if (this.isModified('borrowedAmount')) {
     this.totalBorrowed = this.borrowedAmount;
   }

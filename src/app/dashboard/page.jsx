@@ -1,1429 +1,425 @@
-
-// // 'use client'
-// // import { useEffect, useState } from 'react'
-// // import { useRouter } from 'next/navigation'
-// // import Link from 'next/link'
-
-// // export default function DashboardPage() {
-// //   const [user, setUser] = useState(null)
-// //   const [stats, setStats] = useState({
-// //     totalMembers: 0,
-// //     totalFund: 0,
-// //     recentDeposits: 0
-// //   })
-// //   const [monthlyData, setMonthlyData] = useState([])
-// //   const [expandedHistoryYear, setExpandedHistoryYear] = useState(null) // null or year like 2024
-// //   const [historyData, setHistoryData] = useState({}) // Store multiple years data
-// //   const router = useRouter()
-
-// //   // Generate monthly data for the current year
-// //   const generateMonthlyData = () => {
-// //     const months = []
-// //     const currentYear = new Date().getFullYear()
-// //     const currentDate = new Date()
-// //     const currentMonth = currentDate.getMonth() // 0-based month (0 = January)
-// //     const currentDay = currentDate.getDate()
-
-// //     for (let month = 0; month < 12; month++) {
-// //       const date = new Date(currentYear, month, 25)
-// //       const monthName = date.toLocaleDateString('en-US', { month: 'long' })
-// //       const formattedDate = date.toISOString().split('T')[0]
-
-// //       const totalCollected = Math.floor(Math.random() * 50000) + 50000
-// //       const totalGiven = Math.floor(Math.random() * 40000) + 40000
-// //       const remainingAmount = totalCollected - totalGiven
-
-// //       // Determine status based on current date
-// //       let status = 'completed'
-
-// //       if (month > currentMonth) {
-// //         // Future months
-// //         status = 'upcoming'
-// //       } else if (month === currentMonth) {
-// //         // Current month - check if it's the 25th or later
-// //         if (currentDay >= 25) {
-// //           status = 'current' // Today is 25th or later in current month
-// //         } else {
-// //           status = 'upcoming' // Before 25th in current month
-// //         }
-// //       }
-// //       // For previous months, status remains 'completed'
-
-// //       months.push({
-// //         id: month + 1,
-// //         name: monthName,
-// //         date: formattedDate,
-// //         year: currentYear,
-// //         totalCollected: totalCollected,
-// //         totalGiven: totalGiven,
-// //         remainingAmount: remainingAmount,
-// //         status: status
-// //       })
-// //     }
-
-// //     return months
-// //   }
-
-// //   // Generate data for any historical year
-// //   const generateYearData = (year) => {
-// //     const months = []
-
-// //     for (let month = 0; month < 12; month++) {
-// //       const date = new Date(year, month, 25)
-// //       const monthName = date.toLocaleDateString('en-US', { month: 'long' })
-// //       const formattedDate = date.toISOString().split('T')[0]
-
-// //       const totalCollected = Math.floor(Math.random() * 50000) + 50000
-// //       const totalGiven = Math.floor(Math.random() * 40000) + 40000
-// //       const remainingAmount = totalCollected - totalGiven
-
-// //       months.push({
-// //         id: month + 1,
-// //         name: monthName,
-// //         date: formattedDate,
-// //         year: year,
-// //         totalCollected: totalCollected,
-// //         totalGiven: totalGiven,
-// //         remainingAmount: remainingAmount,
-// //         status: 'completed' // All historical months are completed
-// //       })
-// //     }
-
-// //     return months
-// //   }
-
-// //   // Generate financial years data (3-5 years back)
-// //   const generateFinancialYears = () => {
-// //     const currentYear = new Date().getFullYear()
-// //     const years = {}
-
-// //     // Generate data for current year and previous 4 years (total 5 years)
-// //     for (let i = 4; i >= 0; i--) {
-// //       const year = currentYear - i
-// //       if (year < 2024) continue // Start from 2024 or your preferred start year
-
-// //       years[year] = {
-// //         title: `FY ${year}-${(year + 1).toString().slice(-2)}`,
-// //         data: generateYearData(year),
-// //         summary: {}
-// //       }
-
-// //       // Calculate summary for the year
-// //       years[year].summary = {
-// //         totalCollected: years[year].data.reduce((sum, month) => sum + month.totalCollected, 0),
-// //         totalGiven: years[year].data.reduce((sum, month) => sum + month.totalGiven, 0),
-// //         remainingAmount: years[year].data.reduce((sum, month) => sum + month.remainingAmount, 0)
-// //       }
-// //     }
-
-// //     return years
-// //   }
-
-// //   // Check if all current year months are completed
-// //   const allMonthsCompleted = monthlyData.every(month => month.status === 'completed')
-
-// //   useEffect(() => {
-// //     const isLoggedIn = localStorage.getItem('isLoggedIn')
-// //     const userData = localStorage.getItem('user')
-
-// //     if (isLoggedIn !== 'true' || !userData) {
-// //       router.push('/login')
-// //       return
-// //     }
-
-// //     setUser(JSON.parse(userData))
-
-// //     // Load members from localStorage and calculate stats
-// //     const savedMembers = JSON.parse(localStorage.getItem('members') || '[]')
-
-// //     setStats({
-// //       totalMembers: savedMembers.length,
-// //       totalFund: 125000,
-// //       recentDeposits: 12500
-// //     })
-
-// //     setMonthlyData(generateMonthlyData())
-// //     setHistoryData(generateFinancialYears())
-// //   }, [router])
-
-// //   const handleLogout = () => {
-// //     localStorage.removeItem('isLoggedIn')
-// //     localStorage.removeItem('user')
-// //     router.push('/login')
-// //   }
-
-// //   const getAmountColor = (amount) => {
-// //     if (amount > 0) return 'text-green-600'
-// //     if (amount < 0) return 'text-red-600'
-// //     return 'text-gray-600'
-// //   }
-
-// //   const formatNumber = (number) => {
-// //     if (number === undefined || number === null) return '0'
-// //     return Number(number).toLocaleString()
-// //   }
-
-// //   const handleMonthClick = (monthData) => {
-// //     router.push(`/month/${monthData.date}?name=${encodeURIComponent(monthData.name)}&year=${monthData.year}`)
-// //   }
-
-// //   const handleHistoryYearClick = (year) => {
-// //     setExpandedHistoryYear(expandedHistoryYear === year ? null : year)
-// //   }
-
-// //   if (!user) {
-// //     return (
-// //       <div className="min-h-screen flex items-center justify-center bg-gray-100">
-// //         <div className="text-center">
-// //           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-// //           <p className="mt-4 text-gray-600">Loading...</p>
-// //         </div>
-// //       </div>
-// //     )
-// //   }
-
-// //   return (
-// //     <div className="min-h-screen bg-gray-100">
-// //       <header className="bg-white shadow-sm border-b">
-// //         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-// //           <div className="flex justify-between items-center py-4">
-// //             <h1 className="text-2xl font-bold text-gray-900">Fund Manager Dashboard</h1>
-// //             <div className="flex items-center space-x-4">
-// //               <span className="text-gray-700">Welcome, {user.name}</span>
-// //               <button 
-// //                 onClick={handleLogout} 
-// //                 className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700"
-// //               >
-// //                 Logout
-// //               </button>
-// //             </div>
-// //           </div>
-// //         </div>
-// //       </header>
-
-// //       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-// //         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-// //           <div className="bg-white rounded-lg shadow-md p-6 text-center">
-// //             <h3 className="text-lg font-semibold text-gray-700 mb-2">Total Members</h3>
-// //             <p className="text-3xl font-bold text-blue-600">{stats.totalMembers}</p>
-// //           </div>
-// //           <div className="bg-white rounded-lg shadow-md p-6 text-center">
-// //             <h3 className="text-lg font-semibold text-gray-700 mb-2">Total Fund</h3>
-// //             <p className="text-3xl font-bold text-green-600">₹ {formatNumber(stats.totalFund)}</p>
-// //           </div>
-// //           <div className="bg-white rounded-lg shadow-md p-6 text-center">
-// //             <h3 className="text-lg font-semibold text-gray-700 mb-2">Total Deposits</h3>
-// //             <p className="text-3xl font-bold text-purple-600">₹ {formatNumber(stats.recentDeposits)}</p>
-// //           </div>
-// //         </div>
-
-// //         <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-// //           <h2 className="text-xl font-semibold text-gray-800 mb-4">Quick Actions</h2>
-// //           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-// //             <Link 
-// //               href="/members" 
-// //               className="bg-white border border-gray-200 rounded-lg p-4 hover:bg-gray-50 hover:border-blue-300 transition-colors"
-// //             >
-// //               <h3 className="font-semibold text-gray-800 mb-2">👥 Manage Members</h3>
-// //               <p className="text-sm text-gray-600">Add, remove, or edit members</p>
-// //             </Link>
-// //             <Link 
-// //               href="/deposits" 
-// //               className="bg-white border border-gray-200 rounded-lg p-4 hover:bg-gray-50 hover:border-blue-300 transition-colors"
-// //             >
-// //               <h3 className="font-semibold text-gray-800 mb-2">💰 Deposit Management</h3>
-// //               <p className="text-sm text-gray-600">Track deposits and payments</p>
-// //             </Link>
-// //           </div>
-// //         </div>
-
-// //         <div className="bg-white rounded-lg shadow-md p-6">
-// //           <h2 className="text-xl font-semibold text-gray-800 mb-6">Monthly Collection - 25th of Each Month</h2>
-
-// //           {/* Current Year Section */}
-// //           <div className="mb-8">
-// //             <h3 className="text-lg font-semibold text-gray-700 mb-4">Current Year ({new Date().getFullYear()})</h3>
-// //             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-// //               {monthlyData.length > 0 ? monthlyData.map((month) => (
-// //                 <div 
-// //                   key={month.id}
-// //                   onClick={() => handleMonthClick(month)}
-// //                   className="border border-gray-200 rounded-lg p-4 hover:shadow-lg hover:border-blue-300 transition-all cursor-pointer"
-// //                 >
-// //                   <div className="flex justify-between items-start mb-3">
-// //                     <h3 className="font-semibold text-gray-800 text-lg">{month.name} {month.year}</h3>
-// //                     {/* Status badge removed from here */}
-// //                   </div>
-
-// //                   <div className="space-y-3">
-// //                     <div className="flex justify-between text-sm">
-// //                       <span className="text-gray-600">Total Collected:</span>
-// //                       <span className="font-medium text-green-600">
-// //                         ₹ {formatNumber(month.totalCollected)}
-// //                       </span>
-// //                     </div>
-
-// //                     <div className="flex justify-between text-sm">
-// //                       <span className="text-gray-600">Total Given:</span>
-// //                       <span className="font-medium text-blue-600">
-// //                         ₹ {formatNumber(month.totalGiven)}
-// //                       </span>
-// //                     </div>
-
-// //                     <div className="flex justify-between text-sm">
-// //                       <span className="text-gray-600">Remaining Amount:</span>
-// //                       <span className={`font-medium ${getAmountColor(month.remainingAmount)}`}>
-// //                          ₹ {formatNumber(month.remainingAmount)}
-// //                       </span>
-// //                     </div>
-// //                   </div>
-
-// //                   <div className="mt-4 pt-3 border-t border-gray-100">
-// //                     <button className="w-full bg-blue-600 text-white py-2 px-3 rounded-md text-sm hover:bg-blue-700 transition-colors">
-// //                       View Details
-// //                     </button>
-// //                   </div>
-// //                 </div>
-// //               )) : (
-// //                 <div className="col-span-full text-center py-8">
-// //                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-// //                   <p className="text-gray-600">Loading monthly data...</p>
-// //                 </div>
-// //               )}
-// //             </div>
-// //           </div>
-
-// //           {/* Financial History Section */}
-// //           <div>
-// //             <h3 className="text-lg font-semibold text-gray-700 mb-4">Financial History</h3>
-// //             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-// //               {/* Current Year Summary Card */}
-// //               {allMonthsCompleted && monthlyData.length > 0 && (
-// //                 <div 
-// //                   onClick={() => handleHistoryYearClick(new Date().getFullYear())}
-// //                   className="border-2 border-dashed border-green-300 rounded-lg p-6 hover:shadow-lg hover:border-green-400 transition-all cursor-pointer text-center flex flex-col items-center justify-center min-h-[200px] bg-green-50"
-// //                 >
-// //                   <div className="text-4xl mb-3">📊</div>
-// //                   <h3 className="text-xl font-bold text-gray-800 mb-2">FY {new Date().getFullYear()}-{(new Date().getFullYear() + 1).toString().slice(-2)}</h3>
-// //                   <p className="text-gray-600 mb-3">Current Year Summary</p>
-
-// //                   <div className="space-y-2 text-sm w-full">
-// //                     <div className="flex justify-between">
-// //                       <span className="text-gray-600">Total Collected:</span>
-// //                       <span className="font-medium text-green-600">
-// //                         ₹ {formatNumber(monthlyData.reduce((sum, month) => sum + month.totalCollected, 0))}
-// //                       </span>
-// //                     </div>
-// //                     <div className="flex justify-between">
-// //                       <span className="text-gray-600">Total Given:</span>
-// //                       <span className="font-medium text-blue-600">
-// //                         ₹ {formatNumber(monthlyData.reduce((sum, month) => sum + month.totalGiven, 0))}
-// //                       </span>
-// //                     </div>
-// //                     <div className="flex justify-between">
-// //                       <span className="text-gray-600">Net Amount:</span>
-// //                       <span className={`font-medium ${getAmountColor(monthlyData.reduce((sum, month) => sum + month.remainingAmount, 0))}`}>
-// //                         ₹ {formatNumber(monthlyData.reduce((sum, month) => sum + month.remainingAmount, 0))}
-// //                       </span>
-// //                     </div>
-// //                   </div>
-
-// //                   <div className="mt-4 w-full">
-// //                     <button className="w-full bg-green-600 text-white py-2 px-3 rounded-md text-sm hover:bg-green-700 transition-colors">
-// //                       {expandedHistoryYear === new Date().getFullYear() ? 'Collapse' : 'View All Months'}
-// //                     </button>
-// //                   </div>
-// //                 </div>
-// //               )}
-
-// //               {/* Historical Years Cards */}
-// //               {Object.keys(historyData)
-// //                 .filter(year => year !== new Date().getFullYear().toString())
-// //                 .sort((a, b) => parseInt(b) - parseInt(a))
-// //                 .map(year => (
-// //                   <div 
-// //                     key={year}
-// //                     onClick={() => handleHistoryYearClick(parseInt(year))}
-// //                     className="border-2 border-dashed border-purple-300 rounded-lg p-6 hover:shadow-lg hover:border-purple-400 transition-all cursor-pointer text-center flex flex-col items-center justify-center min-h-[200px] bg-purple-50"
-// //                   >
-// //                     <div className="text-4xl mb-3">📅</div>
-// //                     <h3 className="text-xl font-bold text-gray-800 mb-2">{historyData[year].title}</h3>
-// //                     <p className="text-gray-600 mb-3">Completed Financial Year</p>
-
-// //                     <div className="space-y-2 text-sm w-full">
-// //                       <div className="flex justify-between">
-// //                         <span className="text-gray-600">Total Collected:</span>
-// //                         <span className="font-medium text-green-600">
-// //                           ₹ {formatNumber(historyData[year].summary.totalCollected)}
-// //                         </span>
-// //                       </div>
-// //                       <div className="flex justify-between">
-// //                         <span className="text-gray-600">Total Given:</span>
-// //                         <span className="font-medium text-blue-600">
-// //                           ₹ {formatNumber(historyData[year].summary.totalGiven)}
-// //                         </span>
-// //                       </div>
-// //                       <div className="flex justify-between">
-// //                         <span className="text-gray-600">Net Amount:</span>
-// //                         <span className={`font-medium ${getAmountColor(historyData[year].summary.remainingAmount)}`}>
-// //                           ₹ {formatNumber(historyData[year].summary.remainingAmount)}
-// //                         </span>
-// //                       </div>
-// //                     </div>
-
-// //                     <div className="mt-4 w-full">
-// //                       <button className="w-full bg-purple-600 text-white py-2 px-3 rounded-md text-sm hover:bg-purple-700 transition-colors">
-// //                         {expandedHistoryYear === parseInt(year) ? 'Collapse' : 'View All Months'}
-// //                       </button>
-// //                     </div>
-// //                   </div>
-// //                 ))
-// //               }
-// //             </div>
-
-// //             {/* Expanded Year View - Shows below when a year card is clicked */}
-// //             {expandedHistoryYear && historyData[expandedHistoryYear] && (
-// //               <div className="mt-8 p-6 bg-gray-50 rounded-lg">
-// //                 <div className="flex justify-between items-center mb-6">
-// //                   <h3 className="text-lg font-semibold text-gray-800">
-// //                     {historyData[expandedHistoryYear].title} - All Monthly Records
-// //                   </h3>
-// //                   <button 
-// //                     onClick={() => setExpandedHistoryYear(null)}
-// //                     className="bg-gray-600 text-white px-4 py-2 rounded-md text-sm hover:bg-gray-700 transition-colors"
-// //                   >
-// //                     Collapse
-// //                   </button>
-// //                 </div>
-
-// //                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-// //                   {historyData[expandedHistoryYear].data.map((month) => (
-// //                     <div 
-// //                       key={`${expandedHistoryYear}-${month.id}`}
-// //                       onClick={() => handleMonthClick(month)}
-// //                       className="border border-gray-200 rounded-lg p-4 hover:shadow-lg hover:border-blue-300 transition-all cursor-pointer"
-// //                     >
-// //                       <div className="flex justify-between items-start mb-3">
-// //                         <h3 className="font-semibold text-gray-800 text-lg">{month.name} {month.year}</h3>
-// //                         {/* Status badge removed from here as well */}
-// //                       </div>
-
-// //                       <div className="space-y-3">
-// //                         <div className="flex justify-between text-sm">
-// //                           <span className="text-gray-600">Total Collected:</span>
-// //                           <span className="font-medium text-green-600">
-// //                             ₹ {formatNumber(month.totalCollected)}
-// //                           </span>
-// //                         </div>
-
-// //                         <div className="flex justify-between text-sm">
-// //                           <span className="text-gray-600">Total Given:</span>
-// //                           <span className="font-medium text-blue-600">
-// //                             ₹ {formatNumber(month.totalGiven)}
-// //                           </span>
-// //                         </div>
-
-// //                         <div className="flex justify-between text-sm">
-// //                           <span className="text-gray-600">Remaining Amount:</span>
-// //                           <span className={`font-medium ${getAmountColor(month.remainingAmount)}`}>
-// //                             ₹ {formatNumber(month.remainingAmount)}
-// //                           </span>
-// //                         </div>
-// //                       </div>
-
-// //                       <div className="mt-4 pt-3 border-t border-gray-100">
-// //                         <button className="w-full bg-blue-600 text-white py-2 px-3 rounded-md text-sm hover:bg-blue-700 transition-colors">
-// //                           View Details
-// //                         </button>
-// //                       </div>
-// //                     </div>
-// //                   ))}
-// //                 </div>
-// //               </div>
-// //             )}
-
-// //           </div>
-// //         </div>
-// //       </main>
-// //     </div>
-// //   )
-// // }
-
-
-
-
-// 'use client'
-// import { useEffect, useState } from 'react'
-// import { useRouter } from 'next/navigation'
-// import Link from 'next/link'
-// import banner from '../../../assets/ban.png';
-
-// export default function DashboardPage() {
-//   const [user, setUser] = useState(null)
-//   const [stats, setStats] = useState({
-//     totalMembers: 0,
-//     totalFund: 0,
-//     recentDeposits: 0
-//   })
-//   const [monthlyData, setMonthlyData] = useState([])
-//   const [expandedHistoryYear, setExpandedHistoryYear] = useState(null)
-//   const [historyData, setHistoryData] = useState({})
-//   const router = useRouter()
-
-//   // Generate monthly data for the current year
-//   const generateMonthlyData = () => {
-//     const months = []
-//     const currentYear = new Date().getFullYear()
-//     const currentDate = new Date()
-//     const currentMonth = currentDate.getMonth()
-//     const currentDay = currentDate.getDate()
-
-//     for (let month = 0; month < 12; month++) {
-//       const date = new Date(currentYear, month, 25)
-//       const monthName = date.toLocaleDateString('en-US', { month: 'long' })
-//       const formattedDate = date.toISOString().split('T')[0]
-//       const monthKey = `${currentYear}-${String(month + 1).padStart(2, '0')}`
-
-//       // Use default data since localStorage is disabled
-//       const allMembers = [
-//         { id: 1, name: 'Alice Johnson', isBorrower: false },
-//         { id: 2, name: 'Bob Smith', isBorrower: true },
-//         { id: 3, name: 'Charlie Brown', isBorrower: true },
-//         { id: 4, name: 'David Wilson', isBorrower: false },
-//         { id: 5, name: 'Emma Davis', isBorrower: true },
-//       ]
-
-//       const paidMembers = Math.floor(Math.random() * allMembers.length)
-
-//       let totalCollected = 0
-//       let totalGiven = 0
-
-//       // Use random data for all months
-//       totalCollected = Math.floor(Math.random() * 50000) + 50000
-//       totalGiven = Math.floor(Math.random() * 40000) + 40000
-
-//       const remainingAmount = totalCollected - totalGiven
-
-//       // Determine status - Remove completed status logic
-//       let status = 'upcoming'
-//       if (month === currentMonth) {
-//         status = currentDay >= 25 ? 'current' : 'upcoming'
-//       } else if (month > currentMonth) {
-//         status = 'upcoming'
-//       } else {
-//         status = 'upcoming' // All past months are also upcoming, not completed
-//       }
-
-//       months.push({
-//         id: month + 1,
-//         name: monthName,
-//         date: formattedDate,
-//         year: currentYear,
-//         totalCollected: totalCollected,
-//         totalGiven: totalGiven,
-//         remainingAmount: remainingAmount,
-//         status: status,
-//         monthKey: monthKey,
-//         paidMembers: paidMembers,
-//         totalMembers: allMembers.length
-//       })
-//     }
-
-//     return months
-//   }
-
-//   // Generate data for any historical year
-//   const generateYearData = (year) => {
-//     const months = []
-
-//     for (let month = 0; month < 12; month++) {
-//       const date = new Date(year, month, 25)
-//       const monthName = date.toLocaleDateString('en-US', { month: 'long' })
-//       const formattedDate = date.toISOString().split('T')[0]
-//       const monthKey = `${year}-${String(month + 1).padStart(2, '0')}`
-
-//       // Generate random paid members data for historical months
-//       const paidMembers = Math.floor(Math.random() * 5) + 1
-//       const totalMembers = 5
-
-//       const totalCollected = Math.floor(Math.random() * 50000) + 50000
-//       const totalGiven = Math.floor(Math.random() * 40000) + 40000
-//       const remainingAmount = totalCollected - totalGiven
-
-//       months.push({
-//         id: month + 1,
-//         name: monthName,
-//         date: formattedDate,
-//         year: year,
-//         totalCollected: totalCollected,
-//         totalGiven: totalGiven,
-//         remainingAmount: remainingAmount,
-//         status: 'upcoming',
-//         monthKey: monthKey,
-//         paidMembers: paidMembers,
-//         totalMembers: totalMembers
-//       })
-//     }
-
-//     return months
-//   }
-
-//   // Generate financial years data
-//   const generateFinancialYears = () => {
-//     const currentYear = new Date().getFullYear()
-//     const years = {}
-
-//     for (let i = 4; i >= 0; i--) {
-//       const year = currentYear - i
-//       if (year < 2024) continue
-
-//       years[year] = {
-//         title: `FY ${year}-${(year + 1).toString().slice(-2)}`,
-//         data: generateYearData(year),
-//         summary: {}
-//       }
-
-//       years[year].summary = {
-//         totalCollected: years[year].data.reduce((sum, month) => sum + month.totalCollected, 0),
-//         totalGiven: years[year].data.reduce((sum, month) => sum + month.totalGiven, 0),
-//         remainingAmount: years[year].data.reduce((sum, month) => sum + month.remainingAmount, 0)
-//       }
-//     }
-
-//     return years
-//   }
-
-//   useEffect(() => {
-//     // Simulate user authentication without localStorage
-//     const mockUser = { name: 'Admin User', email: 'admin@chitfund.com' }
-//     setUser(mockUser)
-
-//     // Load members from mock data and calculate stats
-//     const mockMembers = [
-//       { id: 1, name: 'Alice Johnson', isBorrower: false },
-//       { id: 2, name: 'Bob Smith', isBorrower: true },
-//       { id: 3, name: 'Charlie Brown', isBorrower: true },
-//       { id: 4, name: 'David Wilson', isBorrower: false },
-//       { id: 5, name: 'Emma Davis', isBorrower: true },
-//     ]
-
-//     // Calculate mock fund totals
-//     const totalCollected = 125000
-
-//     setStats({
-//       totalMembers: mockMembers.length,
-//       totalFund: totalCollected,
-//       recentDeposits: 12500
-//     })
-
-//     setMonthlyData(generateMonthlyData())
-//     setHistoryData(generateFinancialYears())
-//   }, [router])
-
-//   const handleLogout = () => {
-//     // Since localStorage is disabled, just redirect
-//     router.push('/login')
-//   }
-
-//   const getAmountColor = (amount) => {
-//     if (amount > 0) return 'text-green-600'
-//     if (amount < 0) return 'text-red-600'
-//     return 'text-gray-600'
-//   }
-
-//   const formatNumber = (number) => {
-//     if (number === undefined || number === null) return '0'
-//     return Number(number).toLocaleString()
-//   }
-
-//   const handleMonthClick = (monthData) => {
-//     router.push(`/month/${monthData.date}?name=${encodeURIComponent(monthData.name)}&year=${monthData.year}`)
-//   }
-
-//   const handleHistoryYearClick = (year) => {
-//     setExpandedHistoryYear(expandedHistoryYear === year ? null : year)
-//   }
-
-//   const handleHistoryMonthClick = (monthData) => {
-//     // For historical months, we can still navigate but show a read-only view
-//     router.push(`/month/${monthData.date}?name=${encodeURIComponent(monthData.name)}&year=${monthData.year}&historical=true`)
-//   }
-
-//   // Updated payment status badge function for all months
-//   const getPaymentStatusBadge = (month) => {
-//     if (month.paidMembers > 0) {
-//       return (
-//         <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-//           {month.paidMembers}/{month.totalMembers} Paid
-//         </span>
-//       )
-//     }
-//     return (
-//       <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-//         No payments
-//       </span>
-//     )
-//   }
-
-//   if (!user) {
-//     return (
-//       <div className="min-h-screen flex items-center justify-center bg-gray-100">
-//         <div className="text-center">
-//           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-//           <p className="mt-4 text-gray-600">Loading...</p>
-//         </div>
-//       </div>
-//     )
-//   }
-
-//   return (
-//     <div className="min-h-screen bg-gray-100">
-//       <header className="bg-white shadow-sm border-b">
-//         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-//           <div className="flex justify-between items-center py-4">
-//             <h1 className="text-2xl font-bold text-gray-900">Fund Manager Dashboard</h1>
-//             <div className="flex items-center space-x-4">
-//               <span className="text-gray-700">Welcome, {user.name}</span>
-//               <button 
-//                 onClick={handleLogout} 
-//                 className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700"
-//               >
-//                 Logout
-//               </button>
-//             </div>
-//           </div>
-//         </div>
-//       </header>
-
-//       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-//         {/* Banner Section */}
-//         <div className="mb-8">
-//           <div className="bg-white rounded-lg shadow-md overflow-hidden">
-//             <img
-//               src={banner.src}
-//               alt="Financial Management Banner"
-//               className="w-full h-80 object-cover"
-//             />
-//           </div>
-//         </div>
-
-//         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-//           <div className="bg-white rounded-lg shadow-md p-6 text-center">
-//             <h3 className="text-lg font-semibold text-gray-700 mb-2">Total Members</h3>
-//             <p className="text-3xl font-bold text-blue-600">{stats.totalMembers}</p>
-//           </div>
-//           <div className="bg-white rounded-lg shadow-md p-6 text-center">
-//             <h3 className="text-lg font-semibold text-gray-700 mb-2">Total Fund</h3>
-//             <p className="text-3xl font-bold text-green-600">₹ {formatNumber(stats.totalFund)}</p>
-//           </div>
-//           <div className="bg-white rounded-lg shadow-md p-6 text-center">
-//             <h3 className="text-lg font-semibold text-gray-700 mb-2">Total Deposits</h3>
-//             <p className="text-3xl font-bold text-purple-600">₹ {formatNumber(stats.recentDeposits)}</p>
-//           </div>
-//         </div>
-
-//         <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-//           <h2 className="text-xl font-semibold text-gray-800 mb-4">Quick Actions</h2>
-//           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-//             <Link 
-//               href="/members" 
-//               className="bg-white border border-gray-200 rounded-lg p-4 hover:bg-gray-50 hover:border-blue-300 transition-colors"
-//             >
-//               <h3 className="font-semibold text-gray-800 mb-2">👥 Manage Members</h3>
-//               <p className="text-sm text-gray-600">Add, remove, or edit members</p>
-//             </Link>
-//             <Link 
-//               href="/deposits" 
-//               className="bg-white border border-gray-200 rounded-lg p-4 hover:bg-gray-50 hover:border-blue-300 transition-colors"
-//             >
-//               <h3 className="font-semibold text-gray-800 mb-2">💰 Deposit Management</h3>
-//               <p className="text-sm text-gray-600">Track deposits and payments</p>
-//             </Link>
-//           </div>
-//         </div>
-
-//         <div className="bg-white rounded-lg shadow-md p-6">
-//           <h2 className="text-xl font-semibold text-gray-800 mb-6">Monthly Collection - 25th of Each Month</h2>
-
-//           {/* Current Year Section */}
-//           <div className="mb-8">
-//             <h3 className="text-lg font-semibold text-gray-700 mb-4">Current Year ({new Date().getFullYear()})</h3>
-//             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-//               {monthlyData.length > 0 ? monthlyData.map((month) => (
-//                 <div 
-//                   key={month.id}
-//                   onClick={() => handleMonthClick(month)}
-//                   className="border border-gray-200 rounded-lg p-4 hover:shadow-lg hover:border-blue-300 transition-all cursor-pointer"
-//                 >
-//                   <div className="flex justify-between items-start mb-3">
-//                     <h3 className="font-semibold text-gray-800 text-lg">{month.name} {month.year}</h3>
-//                     {getPaymentStatusBadge(month)}
-//                   </div>
-
-//                   <div className="space-y-3">
-//                     <div className="flex justify-between text-sm">
-//                       <span className="text-gray-600">Total Collected:</span>
-//                       <span className="font-medium text-green-600">
-//                         ₹ {formatNumber(month.totalCollected)}
-//                       </span>
-//                     </div>
-
-//                     <div className="flex justify-between text-sm">
-//                       <span className="text-gray-600">Total Given:</span>
-//                       <span className="font-medium text-blue-600">
-//                         ₹ {formatNumber(month.totalGiven)}
-//                       </span>
-//                     </div>
-
-//                     <div className="flex justify-between text-sm">
-//                       <span className="text-gray-600">Remaining Amount:</span>
-//                       <span className={`font-medium ${getAmountColor(month.remainingAmount)}`}>
-//                         ₹ {formatNumber(month.remainingAmount)}
-//                       </span>
-//                     </div>
-//                   </div>
-
-//                   <div className="mt-4 pt-3 border-t border-gray-100">
-//                     <button className="w-full bg-blue-600 text-white py-2 px-3 rounded-md text-sm hover:bg-blue-700 transition-colors">
-//                       Manage Payments
-//                     </button>
-//                   </div>
-//                 </div>
-//               )) : (
-//                 <div className="col-span-full text-center py-8">
-//                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-//                   <p className="text-gray-600">Loading monthly data...</p>
-//                 </div>
-//               )}
-//             </div>
-//           </div>
-
-//           {/* Financial History Section - Updated to match current year cards */}
-//           <div>
-//             <h3 className="text-lg font-semibold text-gray-700 mb-4">Financial History</h3>
-//             <div className="space-y-4">
-//               {Object.entries(historyData).map(([year, yearData]) => (
-//                 <div key={year} className="border border-gray-200 rounded-lg">
-//                   <div 
-//                     className="p-4 bg-gray-50 hover:bg-gray-100 cursor-pointer flex justify-between items-center"
-//                     onClick={() => handleHistoryYearClick(year)}
-//                   >
-//                     <h4 className="font-semibold text-gray-800">{yearData.title}</h4>
-//                     <svg 
-//                       className={`w-5 h-5 transform transition-transform ${
-//                         expandedHistoryYear === year ? 'rotate-180' : ''
-//                       }`} 
-//                       fill="none" 
-//                       stroke="currentColor" 
-//                       viewBox="0 0 24 24"
-//                     >
-//                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-//                     </svg>
-//                   </div>
-
-//                   {expandedHistoryYear === year && (
-//                     <div className="p-4 border-t border-gray-200">
-//                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-6">
-//                         {yearData.data.map((month) => (
-//                           <div 
-//                             key={month.id}
-//                             onClick={() => handleHistoryMonthClick(month)}
-//                             className="border border-gray-200 rounded-lg p-4 hover:shadow-lg hover:border-blue-300 transition-all cursor-pointer"
-//                           >
-//                             <div className="flex justify-between items-start mb-3">
-//                               <h3 className="font-semibold text-gray-800 text-lg">{month.name} {month.year}</h3>
-//                               {getPaymentStatusBadge(month)}
-//                             </div>
-
-//                             <div className="space-y-3">
-//                               <div className="flex justify-between text-sm">
-//                                 <span className="text-gray-600">Total Collected:</span>
-//                                 <span className="font-medium text-green-600">
-//                                   ₹ {formatNumber(month.totalCollected)}
-//                                 </span>
-//                               </div>
-
-//                               <div className="flex justify-between text-sm">
-//                                 <span className="text-gray-600">Total Given:</span>
-//                                 <span className="font-medium text-blue-600">
-//                                   ₹ {formatNumber(month.totalGiven)}
-//                                 </span>
-//                               </div>
-
-//                               <div className="flex justify-between text-sm">
-//                                 <span className="text-gray-600">Remaining Amount:</span>
-//                                 <span className={`font-medium ${getAmountColor(month.remainingAmount)}`}>
-//                                   ₹ {formatNumber(month.remainingAmount)}
-//                                 </span>
-//                               </div>
-//                             </div>
-
-//                             <div className="mt-4 pt-3 border-t border-gray-100">
-//                               <button className="w-full bg-gray-600 text-white py-2 px-3 rounded-md text-sm hover:bg-gray-700 transition-colors">
-//                                 View Details
-//                               </button>
-//                             </div>
-//                           </div>
-//                         ))}
-//                       </div>
-
-//                       {/* Year Summary - Matching the style but updated for history */}
-//                       <div className="mt-4 p-4 bg-gray-50 rounded-lg">
-//                         <h5 className="font-semibold text-gray-800 mb-2">Year Summary</h5>
-//                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-//                           <div className="text-center p-3 bg-white rounded border border-gray-200">
-//                             <div className="text-gray-600 mb-1">Total Collected</div>
-//                             <div className="font-semibold text-lg text-green-600">₹ {formatNumber(yearData.summary.totalCollected)}</div>
-//                           </div>
-//                           <div className="text-center p-3 bg-white rounded border border-gray-200">
-//                             <div className="text-gray-600 mb-1">Total Given</div>
-//                             <div className="font-semibold text-lg text-blue-600">₹ {formatNumber(yearData.summary.totalGiven)}</div>
-//                           </div>
-//                           <div className="text-center p-3 bg-white rounded border border-gray-200">
-//                             <div className="text-gray-600 mb-1">Net Balance</div>
-//                             <div className={`font-semibold text-lg ${getAmountColor(yearData.summary.remainingAmount)}`}>
-//                               ₹ {formatNumber(yearData.summary.remainingAmount)}
-//                             </div>
-//                           </div>
-//                         </div>
-//                       </div>
-//                     </div>
-//                   )}
-//                 </div>
-//               ))}
-//             </div>
-//           </div>
-//         </div>
-//       </main>
-//     </div>
-//   )
-// }
-
-
-'use client'
-import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
-import Link from 'next/link'
-import banner from '../../../assets/ban.png'
-import { authAPI, dashboardAPI, monthsAPI } from '@/lib/api-client'
+'use client';
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import {
+  Users,
+  Wallet,
+  ArrowUpRight,
+  ArrowDownLeft,
+  Calendar,
+  CreditCard,
+  MoreHorizontal,
+  PlusCircle,
+  FileText
+} from 'lucide-react';
+import { LineChart, Line, ResponsiveContainer, XAxis, YAxis, Tooltip, AreaChart, Area } from 'recharts';
+import DashboardLayout from '@/components/layout/DashboardLayout';
+import { cn } from '@/lib/utils';
+import { monthsAPI, authAPI } from '@/lib/api-client';
+import { Skeleton } from '@/components/ui/Skeleton';
+
+// Stat Card Component
+const StatCard = ({ title, amount, trend, icon: Icon, colorClass, bgClass }) => (
+  <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col justify-between hover:shadow-md transition-shadow">
+    <div className="flex justify-between items-start mb-4">
+      <div className={cn("p-3 rounded-xl", bgClass)}>
+        <Icon size={24} className={colorClass} />
+      </div>
+      <button className="text-gray-300 hover:text-gray-500">
+        <MoreHorizontal size={20} />
+      </button>
+    </div>
+    <div>
+      <p className="text-sm font-medium text-gray-500 mb-1">{title}</p>
+      <div className="flex items-end gap-3">
+        <h3 className="text-2xl font-bold text-gray-800">{amount}</h3>
+        {trend && (
+          <span className={cn(
+            "text-xs font-semibold px-2 py-1 rounded-full mb-1",
+            trend > 0 ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
+          )}>
+            {trend > 0 ? '+' : ''}{trend}%
+          </span>
+        )}
+      </div>
+    </div>
+  </div>
+);
+
+// Month Card Component
+const MonthCard = ({ month, onClick }) => (
+  <div
+    onClick={onClick}
+    className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md hover:border-teal-200 transition-all cursor-pointer group"
+  >
+    <div className="flex justify-between items-start mb-3">
+      <div className="flex items-center gap-3">
+        <div className="p-2.5 bg-blue-50 rounded-xl text-blue-600 group-hover:bg-blue-100 transition-colors">
+          <Calendar size={20} />
+        </div>
+        <div>
+          <h4 className="font-bold text-gray-800">{month.monthName} {month.year}</h4>
+          <span className={cn(
+            "text-[10px] uppercase font-bold px-2 py-0.5 rounded-full",
+            month.status === 'completed' ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"
+          )}>
+            {month.status === 'completed' ? 'बंद' : 'चालू'}
+          </span>
+        </div>
+      </div>
+      <ArrowUpRight size={18} className="text-gray-300 group-hover:text-teal-500 transition-colors" />
+    </div>
+
+    <div className="space-y-2 mt-4">
+      <div className="flex justify-between text-sm">
+        <span className="text-gray-500">जमा झाले</span>
+        <span className="font-bold text-gray-800">₹ {(month.totalCollected || 0).toLocaleString()}</span>
+      </div>
+      {/* Simple Progress Bar */}
+      <div className="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden">
+        <div
+          className="bg-teal-500 h-1.5 rounded-full"
+          style={{ width: `${Math.min(100, ((month.totalCollected || 0) / 100000) * 100)}%` }}
+        ></div>
+      </div>
+    </div>
+  </div>
+);
 
 export default function DashboardPage() {
-  const [user, setUser] = useState(null)
-  const [loading, setLoading] = useState(true)
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [months, setMonths] = useState([]);
   const [stats, setStats] = useState({
     totalMembers: 0,
     totalFund: 0,
-    recentDeposits: 0
-  })
-  const [monthlyData, setMonthlyData] = useState([])
-  const [expandedHistoryYear, setExpandedHistoryYear] = useState(null)
-  const [historyData, setHistoryData] = useState({})
-  const router = useRouter()
+    monthlyCollection: 0,
+    pendingLoans: 0
+  });
+  const router = useRouter();
 
-  // Generate monthly data for the current year from API
-  const generateMonthlyData = async () => {
-    const months = []
-    const currentYear = new Date().getFullYear()
-    const currentDate = new Date()
-    const currentMonth = currentDate.getMonth()
-
-    for (let month = 0; month < 12; month++) {
-      const date = new Date(currentYear, month, 25)
-      const monthName = date.toLocaleDateString('en-US', { month: 'long' })
-      const formattedDate = date.toISOString().split('T')[0]
-
-      try {
-        // Fetch or create monthly data from API
-        const response = await monthsAPI.getByDate(formattedDate)
-        const monthData = response.data.monthlyData
-
-        // Determine status
-        let status = 'upcoming'
-        if (month === currentMonth) {
-          status = currentDate.getDate() >= 25 ? 'current' : 'upcoming'
-        } else if (month < currentMonth) {
-          status = monthData.paidMembers > 0 ? 'current' : 'upcoming'
-        }
-
-        months.push({
-          id: month + 1,
-          name: monthName,
-          date: formattedDate,
-          year: currentYear,
-          totalCollected: monthData.totalCollected || 0,
-          totalGiven: monthData.totalGiven || 0,
-          remainingAmount: monthData.remainingAmount || 0,
-          status: status,
-          monthKey: `${currentYear}-${String(month + 1).padStart(2, '0')}`,
-          paidMembers: monthData.paidMembers || 0,
-          totalMembers: monthData.totalMembers || 0
-        })
-      } catch (error) {
-        console.error(`Error fetching month ${month + 1}:`, error)
-        // Add default data if API fails
-        months.push({
-          id: month + 1,
-          name: monthName,
-          date: formattedDate,
-          year: currentYear,
-          totalCollected: 0,
-          totalGiven: 0,
-          remainingAmount: 0,
-          status: 'upcoming',
-          monthKey: `${currentYear}-${String(month + 1).padStart(2, '0')}`,
-          paidMembers: 0,
-          totalMembers: 0
-        })
-      }
-    }
-
-    return months
-  }
-
-  // Generate financial years data from API
-  const generateFinancialYears = async () => {
-    const currentYear = new Date().getFullYear()
-    const years = {}
-
-    try {
-      // Fetch all monthly data
-      const response = await monthsAPI.getAll()
-      const allMonthsData = response.data.data // data attribute holds the array
-
-      // Group by year
-      for (let i = 4; i >= 0; i--) {
-        const year = currentYear - i
-        if (year < 2024) continue
-
-        const yearMonths = allMonthsData.filter(m => m.year === year)
-
-        // Create months array for the year
-        const monthsArray = []
-        for (let month = 1; month <= 12; month++) {
-          const monthData = yearMonths.find(m => m.month === month)
-          const date = new Date(year, month - 1, 25)
-          const monthName = date.toLocaleDateString('en-US', { month: 'long' })
-          const formattedDate = date.toISOString().split('T')[0]
-
-          monthsArray.push({
-            id: month,
-            name: monthName,
-            date: formattedDate,
-            year: year,
-            totalCollected: monthData?.totalCollected || 0,
-            totalGiven: monthData?.totalGiven || 0,
-            remainingAmount: monthData?.remainingAmount || 0,
-            status: 'upcoming',
-            monthKey: `${year}-${String(month).padStart(2, '0')}`,
-            paidMembers: monthData?.paidMembers || 0,
-            totalMembers: monthData?.totalMembers || 0
-          })
-        }
-
-        years[year] = {
-          title: `FY ${year}-${(year + 1).toString().slice(-2)}`,
-          data: monthsArray,
-          summary: {
-            totalCollected: monthsArray.reduce((sum, m) => sum + m.totalCollected, 0),
-            totalGiven: monthsArray.reduce((sum, m) => sum + m.totalGiven, 0),
-            remainingAmount: monthsArray.reduce((sum, m) => sum + m.remainingAmount, 0)
-          }
-        }
-      }
-    } catch (error) {
-      console.error('Error fetching financial years:', error)
-    }
-
-    return years
-  }
+  // Mock Data for Charts
+  const chartData = [
+    { name: 'Jan', collected: 40000, given: 24000 },
+    { name: 'Feb', collected: 30000, given: 13980 },
+    { name: 'Mar', collected: 20000, given: 58000 },
+    { name: 'Apr', collected: 27800, given: 39080 },
+    { name: 'May', collected: 18900, given: 48000 },
+    { name: 'Jun', collected: 23900, given: 38000 },
+    { name: 'Jul', collected: 34900, given: 43000 },
+  ];
 
   useEffect(() => {
-    const loadDashboard = async () => {
+    const checkAuth = async () => {
       try {
-        setLoading(true)
-
-        // Check authentication
-        const userResponse = await authAPI.getMe()
-        setUser(userResponse.data)
-
-        // Load dashboard stats
-        const statsResponse = await dashboardAPI.getStats()
-        setStats({
-          totalMembers: statsResponse.data.members.total,
-          totalFund: statsResponse.data.deposits.total,
-          recentDeposits: statsResponse.data.deposits.recent
-        })
-
-        // Load monthly data for current year
-        const currentYearData = await generateMonthlyData()
-        setMonthlyData(currentYearData)
-
-        // Load historical data
-        const historicalData = await generateFinancialYears()
-        setHistoryData(historicalData)
-
-      } catch (error) {
-        console.error('Dashboard load error:', error)
-        // Only redirect if it's an auth error (401/403) or critical failure
-        if (error.response && (error.response.status === 401 || error.response.status === 403)) {
-          router.push('/login')
+        const userData = await authAPI.getMe();
+        if (userData.success) {
+          setUser(userData.data || userData);
+          await loadData();
+        } else {
+          await loadData();
         }
-      } finally {
-        setLoading(false)
+      } catch (e) {
+        console.error("Auth check failed:", e);
+        await loadData();
       }
+    };
+    checkAuth();
+  }, []);
+
+  const loadData = async () => {
+    try {
+      const monthsRes = await monthsAPI.getAll();
+      if (monthsRes.success) {
+        const sortedMonths = monthsRes.data.sort((a, b) => new Date(b.date) - new Date(a.date));
+        setMonths(sortedMonths);
+
+        const totalCol = sortedMonths.reduce((acc, m) => acc + (m.totalCollected || 0), 0);
+        const totalLoans = sortedMonths.reduce((acc, m) => acc + (m.totalGiven || 0), 0);
+
+        setStats({
+          totalMembers: 42,
+          totalFund: totalCol - totalLoans,
+          monthlyCollection: sortedMonths[0]?.totalCollected || 0,
+          pendingLoans: totalLoans
+        });
+      }
+    } catch (e) {
+      console.error("Failed to load dashboard data", e);
+    } finally {
+      // Small artificial delay to prevent flicker if data loads too fast, 
+      // but long enough to show smooth skeleton if needed.
+      setTimeout(() => setLoading(false), 300);
     }
+  };
 
-    loadDashboard()
-  }, [router])
-
-  const handleLogout = async () => {
-    await authAPI.logout()
-    router.push('/login')
-  }
-
-  const getAmountColor = (amount) => {
-    if (amount > 0) return 'text-green-600'
-    if (amount < 0) return 'text-red-600'
-    return 'text-gray-600'
-  }
-
-  const formatNumber = (number) => {
-    if (number === undefined || number === null) return '0'
-    return Number(number).toLocaleString()
-  }
-
-  const handleMonthClick = (monthData) => {
-    router.push(`/month/${monthData.date}?name=${encodeURIComponent(monthData.name)}&year=${monthData.year}`)
-  }
-
-  const handleHistoryYearClick = (year) => {
-    setExpandedHistoryYear(expandedHistoryYear === year ? null : year)
-  }
-
-  const handleHistoryMonthClick = (monthData) => {
-    router.push(`/month/${monthData.date}?name=${encodeURIComponent(monthData.name)}&year=${monthData.year}&historical=true`)
-  }
-
-  const getPaymentStatusBadge = (month) => {
-    if (month.paidMembers > 0) {
-      return (
-        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-          {month.paidMembers}/{month.totalMembers} Paid
-        </span>
-      )
+  const handleCreateMonth = () => {
+    const date = new Date();
+    const monthName = date.toLocaleString('default', { month: 'long' });
+    const year = date.getFullYear();
+    const exists = months.find(m => m.monthName === monthName && m.year === year);
+    if (exists) {
+      router.push(`/month/${exists.date}?name=${monthName}&year=${year}`);
+    } else {
+      monthsAPI.POST({ month: date.getMonth() + 1, year }).then(res => {
+        if (res.success) {
+          router.push(`/month/${res.data.date}?name=${monthName}&year=${year}`);
+        }
+      }).catch(err => {
+        const dateStr = date.toISOString().split('T')[0];
+        router.push(`/month/${dateStr}?name=${monthName}&year=${year}`);
+      });
     }
-    return (
-      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-        No payments
-      </span>
-    )
-  }
+  };
+
+  const currentDate = new Date();
+  const currentMonthName = currentDate.toLocaleString('default', { month: 'long' });
+  const currentYear = currentDate.getFullYear();
+
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-100">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading dashboard...</p>
+      <DashboardLayout user={user || { name: 'User' }}>
+        <div className="flex flex-col gap-8 animate-in fade-in duration-500">
+          {/* Header Skeleton */}
+          <div className="space-y-2">
+            <Skeleton className="h-8 w-48" />
+            <Skeleton className="h-4 w-64" />
+          </div>
+
+          {/* Stats Grid Skeleton */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {[1, 2, 3, 4].map(i => (
+              <div key={i} className="bg-white p-6 rounded-2xl border border-gray-100 space-y-4">
+                <div className="flex justify-between">
+                  <Skeleton className="h-10 w-10 rounded-xl" />
+                  <Skeleton className="h-6 w-6 rounded-full" />
+                </div>
+                <div>
+                  <Skeleton className="h-4 w-24 mb-2" />
+                  <Skeleton className="h-8 w-32" />
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Middle Section Skeleton */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="lg:col-span-2 bg-white p-6 rounded-2xl border border-gray-100">
+              <div className="flex justify-between mb-6">
+                <Skeleton className="h-6 w-32" />
+                <Skeleton className="h-6 w-32" />
+              </div>
+              <Skeleton className="h-64 w-full rounded-xl" />
+            </div>
+            <div className="space-y-6">
+              <Skeleton className="h-48 w-full rounded-3xl" />
+              <Skeleton className="h-32 w-full rounded-2xl" />
+            </div>
+          </div>
         </div>
-      </div>
+      </DashboardLayout>
     )
   }
 
-  if (!user) {
-    return null
-  }
-
   return (
-    <div className="min-h-screen bg-gray-100">
-      <header className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-4">
-            <h1 className="text-2xl font-bold text-gray-900">Fund Manager Dashboard</h1>
-            <div className="flex items-center space-x-4">
-              <span className="text-gray-700">Welcome, {user.name}</span>
-              <button
-                onClick={handleLogout}
-                className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700"
-              >
-                Logout
+    <DashboardLayout user={user}>
+
+      <div className="flex flex-col gap-8 animate-in fade-in duration-500">
+        {/* Top Header Section */}
+        <div>
+          <h2 className="text-2xl font-bold text-gray-800">डॅशबोर्ड</h2>
+          <p className="text-gray-500 text-sm mt-1">आपल्या फंडाच्या कामगिरीचा आढावा</p>
+        </div>
+
+        {/* Stats Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <StatCard
+            title="एकूण शिल्लक (Total Balance)"
+            amount={`₹${stats.totalFund.toLocaleString()}`}
+            trend={-0.89}
+            icon={Wallet}
+            colorClass="text-teal-600"
+            bgClass="bg-teal-50"
+          />
+          <StatCard
+            title="मासिक जमा (Monthly Income)"
+            amount={`₹${stats.monthlyCollection.toLocaleString()}`}
+            trend={6.25}
+            icon={ArrowUpRight}
+            colorClass="text-green-600"
+            bgClass="bg-green-50"
+          />
+          <StatCard
+            title="एकूण बचत (Total Savings)"
+            amount={`₹79,290`}
+            trend={-1.25}
+            icon={Calendar} // Just a placeholder
+            colorClass="text-orange-600"
+            bgClass="bg-orange-50"
+          />
+          <StatCard
+            title="वाटप केलेले कर्ज (Loans)"
+            amount={`₹${stats.pendingLoans.toLocaleString()}`}
+            trend={25.15}
+            icon={ArrowDownLeft}
+            colorClass="text-purple-600"
+            bgClass="bg-purple-50"
+          />
+        </div>
+
+        {/* Middle Section: Chart and Card */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Chart Section */}
+          <div className="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="font-bold text-lg text-gray-800">आर्थिक प्रवाह (Money Flow)</h3>
+              <div className="flex gap-2">
+                <div className="flex items-center gap-2 text-xs font-medium text-gray-500">
+                  <span className="w-2 h-2 rounded-full bg-teal-500"></span> जमा (Collection)
+                </div>
+                <div className="flex items-center gap-2 text-xs font-medium text-gray-500">
+                  <span className="w-2 h-2 rounded-full bg-gray-300"></span> कर्ज (Loans)
+                </div>
+              </div>
+            </div>
+            <div className="h-72 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={chartData}>
+                  <defs>
+                    <linearGradient id="colorCollected" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#14b8a6" stopOpacity={0.1} />
+                      <stop offset="95%" stopColor="#14b8a6" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#9ca3af', fontSize: 12 }} dy={10} />
+                  <YAxis axisLine={false} tickLine={false} tick={{ fill: '#9ca3af', fontSize: 12 }} />
+                  <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                  <Area type="monotone" dataKey="collected" stroke="#14b8a6" strokeWidth={3} fillOpacity={1} fill="url(#colorCollected)" />
+                  <Area type="monotone" dataKey="given" stroke="#e5e7eb" strokeWidth={3} fill="transparent" strokeDasharray="5 5" />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* "My Card" / Current Month Section */}
+          <div className="space-y-6">
+            <div className="bg-gradient-to-br from-teal-800 to-teal-600 rounded-3xl p-6 text-white shadow-xl shadow-teal-100 relative overflow-hidden group">
+              <div className="absolute top-0 right-0 p-8 opacity-10">
+                <Wallet size={120} />
+              </div>
+
+              <div className="relative z-10 flex justify-between items-start mb-8">
+                <CreditCard size={28} className="opacity-80" />
+              </div>
+
+              <div className="relative z-10 mb-8">
+                <p className="text-teal-200 text-sm mb-1">चालू महिन्याची शिल्लक</p>
+                <h3 className="text-3xl font-bold tracking-tight">₹ 45,231.00</h3>
+              </div>
+
+              <div className="relative z-10 flex justify-between items-end">
+                <div>
+                  <p className="text-xs text-teal-200 uppercase tracking-widest mb-1">खातेदार</p>
+                  <p className="font-medium tracking-wide">शिवांजली फंड</p>
+                </div>
+                <div>
+                  <p className="text-xs text-teal-200 uppercase tracking-widest mb-1">महिना</p>
+                  <p className="font-medium tracking-wide">{currentMonthName} {currentYear}</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+              <div className="flex justify-between items-center mb-4">
+                <div>
+                  <p className="text-sm text-gray-500">मासिक उद्दिष्टे (Targets)</p>
+                  <h4 className="font-bold text-gray-800 text-lg">Running Low</h4>
+                </div>
+                <div className="text-right">
+                  <p className="text-xs font-bold text-red-500 bg-red-50 px-2 py-1 rounded-full">-0.89%</p>
+                </div>
+              </div>
+              <div className="flex items-center justify-between text-sm py-3 border-b border-gray-50">
+                <span className="text-gray-500">चलन (Currency)</span>
+                <span className="font-medium text-gray-800">INR / रुपया</span>
+              </div>
+              <div className="flex items-center justify-between text-sm py-3">
+                <span className="text-gray-500">स्थिती (Status)</span>
+                <span className="font-medium text-green-600 bg-green-50 px-2 py-0.5 rounded-full text-xs">चालू</span>
+              </div>
+              <button className="w-full mt-2 py-3 rounded-xl bg-gray-50 hover:bg-teal-50 text-gray-600 hover:text-teal-600 font-medium transition-colors text-sm flex items-center justify-center gap-2">
+                + व्यवहार जोडा
               </button>
             </div>
           </div>
         </div>
-      </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Banner Section */}
-        <div className="mb-8">
-          <div className="bg-white rounded-lg shadow-md overflow-hidden">
-            <img
-              src={banner.src}
-              alt="Financial Management Banner"
-              className="w-full h-80 object-cover"
-            />
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="bg-white rounded-lg shadow-md p-6 text-center">
-            <h3 className="text-lg font-semibold text-gray-700 mb-2">Total Members</h3>
-            <p className="text-3xl font-bold text-blue-600">{stats.totalMembers}</p>
-          </div>
-          <div className="bg-white rounded-lg shadow-md p-6 text-center">
-            <h3 className="text-lg font-semibold text-gray-700 mb-2">Total Fund</h3>
-            <p className="text-3xl font-bold text-green-600">₹ {formatNumber(stats.totalFund)}</p>
-          </div>
-          <div className="bg-white rounded-lg shadow-md p-6 text-center">
-            <h3 className="text-lg font-semibold text-gray-700 mb-2">Recent Deposits</h3>
-            <p className="text-3xl font-bold text-purple-600">₹ {formatNumber(stats.recentDeposits)}</p>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-          <h2 className="text-xl font-semibold text-gray-800 mb-4">Quick Actions</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Link
-              href="/members"
-              className="bg-white border border-gray-200 rounded-lg p-4 hover:bg-gray-50 hover:border-blue-300 transition-colors"
-            >
-              <h3 className="font-semibold text-gray-800 mb-2">👥 Manage Members</h3>
-              <p className="text-sm text-gray-600">Add, remove, or edit members</p>
-            </Link>
-            <Link
-              href="/deposits"
-              className="bg-white border border-gray-200 rounded-lg p-4 hover:bg-gray-50 hover:border-blue-300 transition-colors"
-            >
-              <h3 className="font-semibold text-gray-800 mb-2">💰 Deposit Management</h3>
-              <p className="text-sm text-gray-600">Track deposits and payments</p>
-            </Link>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <h2 className="text-xl font-semibold text-gray-800 mb-6">Monthly Collection - 25th of Each Month</h2>
-
-          {/* Current Year Section */}
-          <div className="mb-8">
-            <h3 className="text-lg font-semibold text-gray-700 mb-4">Current Year ({new Date().getFullYear()})</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {monthlyData.length > 0 ? monthlyData.map((month) => (
-                <div
-                  key={month.id}
-                  onClick={() => handleMonthClick(month)}
-                  className="border border-gray-200 rounded-lg p-4 hover:shadow-lg hover:border-blue-300 transition-all cursor-pointer"
-                >
-                  <div className="flex justify-between items-start mb-3">
-                    <h3 className="font-semibold text-gray-800 text-lg">{month.name} {month.year}</h3>
-                    {getPaymentStatusBadge(month)}
-                  </div>
-
-                  <div className="space-y-3">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Total Collected:</span>
-                      <span className="font-medium text-green-600">
-                        ₹ {formatNumber(month.totalCollected)}
-                      </span>
-                    </div>
-
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Total Given:</span>
-                      <span className="font-medium text-blue-600">
-                        ₹ {formatNumber(month.totalGiven)}
-                      </span>
-                    </div>
-
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Remaining Amount:</span>
-                      <span className={`font-medium ${getAmountColor(month.remainingAmount)}`}>
-                        ₹ {formatNumber(month.remainingAmount)}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="mt-4 pt-3 border-t border-gray-100">
-                    <button className="w-full bg-blue-600 text-white py-2 px-3 rounded-md text-sm hover:bg-blue-700 transition-colors">
-                      Manage Payments
-                    </button>
-                  </div>
-                </div>
-              )) : (
-                <div className="col-span-full text-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                  <p className="text-gray-600">Loading monthly data...</p>
-                </div>
-              )}
-            </div>
+        {/* Monthly Collections / History Section (RESTORED) */}
+        <div>
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="font-bold text-lg text-gray-800">मासिक तपशील आणि इतिहास</h3>
+            <button onClick={handleCreateMonth} className="flex items-center gap-2 text-sm text-teal-600 font-medium hover:underline">
+              <PlusCircle size={14} /> नवीन महिना सुरू करा
+            </button>
           </div>
 
-          {/* Financial History Section */}
-          <div>
-            <h3 className="text-lg font-semibold text-gray-700 mb-4">Financial History</h3>
-            <div className="space-y-4">
-              {Object.entries(historyData).map(([year, yearData]) => (
-                <div key={year} className="border border-gray-200 rounded-lg">
-                  <div
-                    className="p-4 bg-gray-50 hover:bg-gray-100 cursor-pointer flex justify-between items-center"
-                    onClick={() => handleHistoryYearClick(year)}
-                  >
-                    <h4 className="font-semibold text-gray-800">{yearData.title}</h4>
-                    <svg
-                      className={`w-5 h-5 transform transition-transform ${expandedHistoryYear === year ? 'rotate-180' : ''
-                        }`}
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </div>
-
-                  {expandedHistoryYear === year && (
-                    <div className="p-4 border-t border-gray-200">
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-6">
-                        {yearData.data.map((month) => (
-                          <div
-                            key={month.id}
-                            onClick={() => handleHistoryMonthClick(month)}
-                            className="border border-gray-200 rounded-lg p-4 hover:shadow-lg hover:border-blue-300 transition-all cursor-pointer"
-                          >
-                            <div className="flex justify-between items-start mb-3">
-                              <h3 className="font-semibold text-gray-800 text-lg">{month.name} {month.year}</h3>
-                              {getPaymentStatusBadge(month)}
-                            </div>
-
-                            <div className="space-y-3">
-                              <div className="flex justify-between text-sm">
-                                <span className="text-gray-600">Total Collected:</span>
-                                <span className="font-medium text-green-600">
-                                  ₹ {formatNumber(month.totalCollected)}
-                                </span>
-                              </div>
-
-                              <div className="flex justify-between text-sm">
-                                <span className="text-gray-600">Total Given:</span>
-                                <span className="font-medium text-blue-600">
-                                  ₹ {formatNumber(month.totalGiven)}
-                                </span>
-                              </div>
-
-                              <div className="flex justify-between text-sm">
-                                <span className="text-gray-600">Remaining Amount:</span>
-                                <span className={`font-medium ${getAmountColor(month.remainingAmount)}`}>
-                                  ₹ {formatNumber(month.remainingAmount)}
-                                </span>
-                              </div>
-                            </div>
-
-                            <div className="mt-4 pt-3 border-t border-gray-100">
-                              <button className="w-full bg-gray-600 text-white py-2 px-3 rounded-md text-sm hover:bg-gray-700 transition-colors">
-                                View Details
-                              </button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-
-                      <div className="mt-4 p-4 bg-gray-50 rounded-lg">
-                        <h5 className="font-semibold text-gray-800 mb-2">Year Summary</h5>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                          <div className="text-center p-3 bg-white rounded border border-gray-200">
-                            <div className="text-gray-600 mb-1">Total Collected</div>
-                            <div className="font-semibold text-lg text-green-600">₹ {formatNumber(yearData.summary.totalCollected)}</div>
-                          </div>
-                          <div className="text-center p-3 bg-white rounded border border-gray-200">
-                            <div className="text-gray-600 mb-1">Total Given</div>
-                            <div className="font-semibold text-lg text-blue-600">₹ {formatNumber(yearData.summary.totalGiven)}</div>
-                          </div>
-                          <div className="text-center p-3 bg-white rounded border border-gray-200">
-                            <div className="text-gray-600 mb-1">Net Balance</div>
-                            <div className={`font-semibold text-lg ${getAmountColor(yearData.summary.remainingAmount)}`}>
-                              ₹ {formatNumber(yearData.summary.remainingAmount)}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
+          {months.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {months.map(month => (
+                <MonthCard
+                  key={month._id}
+                  month={month}
+                  onClick={() => router.push(`/month/${month.date}?name=${month.monthName}&year=${month.year}${month.status === 'completed' ? '&historical=true' : ''}`)}
+                />
               ))}
             </div>
+          ) : (
+            <div className="bg-white p-8 rounded-2xl border border-gray-100 text-center">
+              <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4 text-gray-400">
+                <FileText size={32} />
+              </div>
+              <h3 className="font-bold text-gray-800">कोणताही इतिहास आढळला नाही</h3>
+              <p className="text-gray-500 text-sm mt-1">येथे जमा तपशील पाहण्यासाठी नवीन महिना सुरू करा.</p>
+              <button
+                onClick={handleCreateMonth}
+                className="mt-4 px-4 py-2 bg-teal-600 text-white rounded-lg text-sm font-medium hover:bg-teal-700"
+              >
+                चालू महिना तयार करा
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Recent Transactions / Members */}
+        <div>
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="font-bold text-lg text-gray-800">अलीकडील व्यवहार</h3>
+            <button className="text-sm text-teal-600 font-medium hover:underline">सर्व पहा</button>
+          </div>
+
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="flex items-center justify-between p-4 hover:bg-gray-50 transition-colors border-b last:border-0 border-gray-50">
+                <div className="flex items-center gap-4">
+                  <div className={cn("w-10 h-10 rounded-full flex items-center justify-center", i % 2 === 0 ? "bg-purple-100 text-purple-600" : "bg-blue-100 text-blue-600")}>
+                    {i % 2 === 0 ? <Users size={20} /> : <Wallet size={20} />}
+                  </div>
+                  <div>
+                    <p className="font-semibold text-gray-800 text-sm">सभासद भरणा - राहुल पाटील</p>
+                    <p className="text-xs text-gray-500">आज सकाळी 09:4{i}</p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="font-bold text-gray-800 text-sm">+ ₹5,200</p>
+                  <p className="text-xs text-green-500">पूर्ण</p>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
-      </main>
-    </div>
-  )
+
+      </div>
+    </DashboardLayout>
+  );
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

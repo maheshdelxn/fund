@@ -35,10 +35,17 @@
 // src/app/layout.tsx
 import "./globals.css";
 
+// src/app/layout.tsx
+import "./globals.css";
+import { Toaster } from 'sonner';
+
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        {children}
+        <Toaster richColors position="top-center" closeButton />
+      </body>
     </html>
   );
 }

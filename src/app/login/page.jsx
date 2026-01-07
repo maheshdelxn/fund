@@ -1,90 +1,129 @@
-'use client'
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { authAPI } from '@/lib/api-client'
+'use client';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
+import { authAPI } from '@/lib/api-client';
+import { Mail, Lock, ArrowRight, Loader2 } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 export default function LoginPage() {
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [error, setError] = useState('')
-  const [loading, setLoading] = useState(false)
-  const router = useRouter()
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const router = useRouter();
 
   const handleLogin = async (e) => {
-    e.preventDefault()
-    setError('')
-    setLoading(true)
+    e.preventDefault();
+    setIsLoading(true);
 
     try {
-      const response = await authAPI.login(email, password)
-      
-      if (response.success) {
-        // Redirect to dashboard
-        router.push('/dashboard')
+      // Small artificial delay for animation smoothness if response is too fast
+      await new Promise(r => setTimeout(r, 800));
+
+      const res = await authAPI.login({ email, password });
+
+      if (res.success) {
+        toast.success("लॉगिन यशस्वी!", {
+          description: "शिवांजली फंड मध्ये आपले स्वागत आहे."
+        });
+        router.push('/dashboard');
+      } else {
+        toast.error("लॉगिन अयशस्वी", {
+          description: res.error || "कृपया ईमेल आणि पासवर्ड तपासा."
+        });
+        setIsLoading(false);
       }
     } catch (err) {
-      setError(err.message || 'Login failed. Please check your credentials.')
-    } finally {
-      setLoading(false)
+      toast.error("काहीतरी चूक झाली", {
+        description: "कृपया पुन्हा प्रयत्न करा."
+      });
+      setIsLoading(false);
     }
-  }
+  };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-500 to-purple-600">
-      <div className="bg-white p-8 rounded-lg shadow-2xl w-full max-w-md">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Chit Fund Manager</h1>
-          <p className="text-gray-600">Sign in to your account</p>
+    <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden bg-gray-50">
+
+      {/* Animated Background Elements */}
+      <div className="absolute inset-0 z-0">
+        <div className="absolute -top-40 -left-40 w-96 h-96 bg-teal-400 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob"></div>
+        <div className="absolute top-0 -right-20 w-80 h-80 bg-purple-400 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000"></div>
+        <div className="absolute -bottom-32 left-20 w-80 h-80 bg-pink-400 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-4000"></div>
+      </div>
+
+      <div className="w-full max-w-md relative z-10">
+        <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/50 p-8 md:p-12">
+
+          <div className="text-center mb-10">
+            <h2 className="text-4xl font-bold bg-gradient-to-r from-teal-600 to-emerald-600 bg-clip-text text-transparent mb-2">
+              शिवांजली फंड
+            </h2>
+            <p className="text-gray-500 font-medium">स्वागत आहे / नमस्ते</p>
+          </div>
+
+          <form onSubmit={handleLogin} className="space-y-6">
+            <div className="space-y-2">
+              <label className="text-sm font-semibold text-gray-700 ml-1">ईमेल</label>
+              <div className="relative group">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                  <Mail className="h-5 w-5 text-gray-400 group-focus-within:text-teal-500 transition-colors" />
+                </div>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full pl-11 pr-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all outline-none font-medium text-gray-700"
+                  placeholder="admin@example.com"
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-semibold text-gray-700 ml-1">पासवर्ड</label>
+              <div className="relative group">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                  <Lock className="h-5 w-5 text-gray-400 group-focus-within:text-teal-500 transition-colors" />
+                </div>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full pl-11 pr-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all outline-none font-medium text-gray-700"
+                  placeholder="••••••••"
+                  required
+                />
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={isLoading}
+              className={cn(
+                "w-full flex items-center justify-center gap-2 bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 text-white font-bold py-4 rounded-xl shadow-lg shadow-teal-200/50 transform transition-all active:scale-[0.98]",
+                isLoading ? "opacity-90 cursor-not-allowed" : "hover:-translate-y-0.5"
+              )}
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  तपासत आहे...
+                </>
+              ) : (
+                <>
+                  लॉगिन करा <ArrowRight className="w-5 h-5" />
+                </>
+              )}
+            </button>
+          </form>
+
+
         </div>
-        
-        {error && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-            {error}
-          </div>
-        )}
 
-        <form onSubmit={handleLogin}>
-          <div className="mb-4">
-            <label className="block text-gray-700 mb-2 font-medium">Email</label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
-              placeholder="admin@chitfund.com"
-              required
-            />
-          </div>
-
-          <div className="mb-6">
-            <label className="block text-gray-700 mb-2 font-medium">Password</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
-              placeholder="Enter your password"
-              required
-            />
-          </div>
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-blue-600 text-white py-3 rounded-md hover:bg-blue-700 disabled:bg-gray-400 font-medium transition-colors"
-          >
-            {loading ? 'Logging in...' : 'Login'}
-          </button>
-        </form>
-
-        <div className="mt-6 text-center text-sm text-gray-600">
-          <p>Default credentials:</p>
-          <p className="font-mono bg-gray-100 p-2 rounded mt-2">
-            Email: admin@chitfund.com<br />
-            Password: Admin@123
-          </p>
-        </div>
+        <p className="text-center mt-6 text-gray-500 text-sm font-medium">
+          शिवांजली चॅरिटेबल ट्रस्ट
+        </p>
       </div>
     </div>
-  )
+  );
 }

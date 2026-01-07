@@ -105,8 +105,9 @@ const memberSchema = new mongoose.Schema({
   },
   address: {
     type: String,
-    required: [true, 'Please provide address'],
-    trim: true
+    // required: [true, 'Please provide address'],
+    trim: true,
+    default: ''
   },
   notes: {
     type: String,

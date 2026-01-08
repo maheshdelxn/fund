@@ -45,7 +45,7 @@ export async function GET(request) {
     }
 
     const deposits = await Deposit.find(query)
-      .populate('member', 'name email phone')
+      .populate('member', 'name email phone serialNo')
       .sort({ date: -1 })
       .limit(limit)
       .skip((page - 1) * limit);
@@ -119,11 +119,25 @@ export async function POST(request) {
 
       if (!member) {
         // Create new member
+        // Generate next serial number with MBR prefix
+        const lastMember = await Member.findOne({ serialNo: { $regex: /^MBR\d+$/ } }).sort({ serialNo: -1 });
+        let serialNo = 'MBR001';
+
+        if (lastMember && lastMember.serialNo) {
+          // Extract number from MBRxxx format
+          const lastNum = parseInt(lastMember.serialNo.replace('MBR', ''));
+          if (!isNaN(lastNum)) {
+            serialNo = `MBR${String(lastNum + 1).padStart(3, '0')}`;
+          }
+        }
+
         const email = `${phone}@chitfund.temp`;
         member = await Member.create({
+          serialNo,
           name,
           phone,
           email,
+          joinDate: date,
           notes: 'Auto-created from deposit'
         });
       }
@@ -155,7 +169,7 @@ export async function POST(request) {
     await member.save();
 
     const populatedDeposit = await Deposit.findById(deposit._id)
-      .populate('member', 'name email phone');
+      .populate('member', 'name email phone serialNo');
 
     return NextResponse.json({
       success: true,

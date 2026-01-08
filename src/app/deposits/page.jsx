@@ -307,7 +307,10 @@ export default function Deposits() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-xs font-medium text-gray-500 uppercase mb-1 block">शेअर्स (भाग)</label>
+                  <div className="flex justify-between items-center mb-1">
+                    <label className="text-xs font-medium text-gray-500 uppercase block">शेअर्स (भाग)</label>
+                    <span className="text-[10px] text-teal-600 font-bold bg-teal-50 px-1.5 py-0.5 rounded">₹ 5,000 प्रति शेअर</span>
+                  </div>
                   <input
                     type="number"
                     placeholder="0"
@@ -411,6 +414,7 @@ export default function Deposits() {
             <table className="w-full text-left">
               <thead className="bg-gray-50/50">
                 <tr>
+                  <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">आयडी</th>
                   <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">सभासद / नाव</th>
                   <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">संपर्क</th>
                   <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">तारीख</th>
@@ -422,6 +426,9 @@ export default function Deposits() {
               <tbody className="divide-y divide-gray-50">
                 {deposits.map(deposit => (
                   <tr key={deposit._id} className="hover:bg-gray-50/50 transition-colors group">
+                    <td className="px-6 py-4 text-sm font-bold text-teal-600 font-mono">
+                      {deposit.member?.serialNo || deposit.serialNo || '-'}
+                    </td>
                     <td className="px-6 py-4">
                       {editingDeposit === deposit._id ? (
                         <input

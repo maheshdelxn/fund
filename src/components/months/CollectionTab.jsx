@@ -43,6 +43,7 @@ const CollectionTab = ({
                                 <th className="p-4 font-semibold text-gray-600 w-16 text-center">क्र.</th>
                                 <th className="p-4 font-semibold text-gray-600 min-w-[200px]">सभासद (Member)</th>
                                 <th className="p-4 font-semibold text-gray-600 text-right">शेअर्स</th>
+                                <th className="p-4 font-semibold text-gray-600 text-right">बाकी शेअर्स</th>
                                 <th className="p-4 font-semibold text-gray-600 text-right">मुद्दल</th>
                                 <th className="p-4 font-semibold text-gray-600 text-right">व्याज</th>
                                 <th className="p-4 font-semibold text-gray-600 text-right">दंड</th>
@@ -81,10 +82,12 @@ const CollectionTab = ({
                                     const interest = pd?.interestAmount || 0;
                                     const newPrincipal = pd?.newPrincipal || 0;
 
+                                    const hasArrears = pd?.pendingShares > 0;
+
                                     return (
                                         <tr
                                             key={memberId}
-                                            className={`group transition-colors duration-150 ${isPaid ? 'bg-green-50/30' : 'hover:bg-gray-50/80'}`}
+                                            className={`group transition-colors duration-150 ${isPaid ? 'bg-green-50/30' : 'hover:bg-gray-50/80'} ${hasArrears && !isPaid ? 'text-red-600' : ''}`}
                                         >
                                             <td className="p-4 text-center font-medium text-gray-500">
                                                 {member.serialNo}
@@ -94,12 +97,26 @@ const CollectionTab = ({
                                                     onClick={() => onMemberClick && onMemberClick(memberId)}
                                                     className="flex flex-col text-left hover:opacity-75 transition-opacity"
                                                 >
-                                                    <span className="font-semibold text-gray-900 group-hover:text-teal-700 transition-colors">{member.name}</span>
-                                                    <span className="text-xs text-gray-400">{member.phone}</span>
+                                                    <span className={`font-semibold transition-colors ${hasArrears && !isPaid ? 'text-red-600 group-hover:text-red-700' : 'text-gray-900 group-hover:text-teal-700'}`}>{member.name}</span>
+                                                    <span className={`text-xs ${hasArrears && !isPaid ? 'text-red-400' : 'text-gray-400'}`}>{member.phone}</span>
                                                 </button>
                                             </td>
                                             <td className="p-4 text-right tabular-nums text-gray-600">
                                                 ₹{shares.toLocaleString()}
+                                            </td>
+                                            <td className="p-4 text-right tabular-nums">
+                                                {pd?.pendingShares > 0 ? (
+                                                    <div className="flex flex-col items-end">
+                                                        <span className="font-bold text-red-600">₹{pd.pendingShares.toLocaleString()}</span>
+                                                        {member.pendingMonths && member.pendingMonths.length > 0 && (
+                                                            <span className="text-[10px] text-red-400 font-medium">
+                                                                ({member.pendingMonths.join(', ')})
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                ) : (
+                                                    <span className="text-gray-300">-</span>
+                                                )}
                                             </td>
                                             <td className="p-4 text-right">
                                                 {isPaid ? (

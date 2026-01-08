@@ -357,6 +357,7 @@ export default function Members() {
             <table className="w-full text-left">
               <thead className="bg-gray-50/50">
                 <tr>
+                  <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">सभासद आयडी</th>
                   <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">नाव</th>
                   <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">पत्ता</th>
                   <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">फोन</th>
@@ -367,6 +368,9 @@ export default function Members() {
               <tbody className="divide-y divide-gray-50">
                 {members.map(member => (
                   <tr key={member._id} className="hover:bg-gray-50/50 transition-colors group">
+                    <td className="px-6 py-4 text-sm font-bold text-teal-600 font-mono">
+                      {member.serialNo}
+                    </td>
                     <td className="px-6 py-4">
                       {editingMember === member._id ? (
                         <input

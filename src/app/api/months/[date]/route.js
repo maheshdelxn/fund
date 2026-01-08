@@ -120,15 +120,89 @@ export async function GET(request, { params }) {
       })
     };
 
+    // Get all previous completed months to calculate arrears
+    const previousMonths = await MonthlyData.find({
+      date: { $lt: monthlyData.date }
+    }).sort({ date: 1 });
+
+    const allMembersWithArrears = await Promise.all(allMembers.map(async (m) => {
+      const memberId = m._id.toString();
+      let pendingShares = 0;
+      let pendingMonths = [];
+      const sharePrice = 1000;
+      const expectedPerMonth = (m.numberOfShares || 1) * sharePrice;
+
+      const joinDateObj = new Date(m.joinDate);
+      const joinYear = joinDateObj.getFullYear();
+      const joinMonthNum = joinDateObj.getMonth() + 1; // 1-indexed
+
+      const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+      // Start from the month BEFORE the target month
+      let checkMonth = month - 1;
+      let checkYear = year;
+      if (checkMonth === 0) {
+        checkMonth = 12;
+        checkYear--;
+      }
+
+      // Loop backwards until we reach the month before joinDate
+      while (checkYear > joinYear || (checkYear === joinYear && checkMonth >= joinMonthNum)) {
+        // Find if MonthlyData exists for this logical month
+        const mData = await MonthlyData.findOne({ month: checkMonth, year: checkYear });
+
+        let isUnpaid = false;
+        let diff = 0;
+
+        if (!mData) {
+          isUnpaid = true;
+          diff = expectedPerMonth;
+        } else {
+          // If month record exists, check for payment
+          const payment = await Payment.findOne({
+            monthlyData: mData._id,
+            member: m._id,
+            status: 'completed'
+          });
+
+          if (!payment) {
+            isUnpaid = true;
+            diff = expectedPerMonth;
+          } else if ((payment.shareAmount || 0) < expectedPerMonth) {
+            isUnpaid = true;
+            diff = (expectedPerMonth - (payment.shareAmount || 0));
+          }
+        }
+
+        if (isUnpaid) {
+          pendingShares += diff;
+          if (pendingMonths.length < 3) {
+            pendingMonths.push(monthNames[checkMonth - 1]);
+          }
+        }
+
+        // Move to previous month
+        checkMonth--;
+        if (checkMonth === 0) {
+          checkMonth = 12;
+          checkYear--;
+        }
+      }
+
+      return {
+        ...m.toObject(),
+        id: memberId,
+        _id: memberId,
+        pendingShares,
+        pendingMonths: pendingMonths // Already in most-recent-first order
+      };
+    }));
+
     return NextResponse.json({
       success: true,
       data: {
         monthlyData: monthlyDataResponse,
-        allMembers: allMembers.map(m => ({
-          ...m.toObject(),
-          id: m._id.toString(),
-          _id: m._id.toString()
-        })),
+        allMembers: allMembersWithArrears,
         payments: payments.map(p => ({
           ...p.toObject(),
           _id: p._id.toString(),

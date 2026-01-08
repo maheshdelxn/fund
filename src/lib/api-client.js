@@ -213,6 +213,13 @@ export const monthsAPI = {
       method: 'DELETE',
     });
   },
+
+  create: async (monthData) => {
+    return await apiFetch('/months', {
+      method: 'POST',
+      body: JSON.stringify(monthData),
+    });
+  },
 };
 
 // Dashboard API

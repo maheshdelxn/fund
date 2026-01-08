@@ -17,6 +17,14 @@ import DashboardLayout from '@/components/layout/DashboardLayout';
 import { cn } from '@/lib/utils';
 import { monthsAPI, authAPI } from '@/lib/api-client';
 import { Skeleton } from '@/components/ui/Skeleton';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+
+const MONTH_NAMES = [
+  "जानेवारी", "फेब्रुवारी", "मार्च", "एप्रिल", "मे", "जून",
+  "जुलै", "ऑगस्ट", "सप्टेंबर", "ऑक्टोबर", "नोव्हेंबर", "डिसेंबर"
+];
+
+const YEARS = Array.from({ length: 7 }, (_, i) => new Date().getFullYear() - 3 + i);
 
 // Stat Card Component
 const StatCard = ({ title, amount, trend, icon: Icon, colorClass, bgClass }) => (
@@ -47,7 +55,7 @@ const StatCard = ({ title, amount, trend, icon: Icon, colorClass, bgClass }) => 
 );
 
 // Month Card Component
-const MonthCard = ({ month, onClick }) => (
+const MonthCard = ({ month, onClick, previousRemaining = 0 }) => (
   <div
     onClick={onClick}
     className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md hover:border-teal-200 transition-all cursor-pointer group"
@@ -71,16 +79,34 @@ const MonthCard = ({ month, onClick }) => (
     </div>
 
     <div className="space-y-2 mt-4">
-      <div className="flex justify-between text-sm">
-        <span className="text-gray-500">जमा झाले</span>
+      <div className="flex justify-between text-[11px]">
+        <span className="text-gray-500">मासिक जमा (Collection)</span>
         <span className="font-bold text-gray-800">₹ {(month.totalCollected || 0).toLocaleString()}</span>
       </div>
-      {/* Simple Progress Bar */}
-      <div className="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden">
-        <div
-          className="bg-teal-500 h-1.5 rounded-full"
-          style={{ width: `${Math.min(100, ((month.totalCollected || 0) / 100000) * 100)}%` }}
-        ></div>
+
+      <div className="flex justify-between text-[11px]">
+        <span className="text-gray-500">ठेव जमा (Deposits)</span>
+        <span className="font-bold text-teal-600">+ ₹ {(month.totalDeposits || 0).toLocaleString()}</span>
+      </div>
+
+      <div className="flex justify-between text-[11px] border-b border-gray-50 pb-1">
+        <span className="text-gray-500">कर्ज वाटप (Loans)</span>
+        <span className="font-bold text-red-500">- ₹ {(month.totalGiven || 0).toLocaleString()}</span>
+      </div>
+
+      {/* Carry Forward Display */}
+      <div className="flex justify-between text-[11px] font-medium text-teal-600 bg-teal-50/50 px-2 py-1 rounded-lg">
+        <span className="opacity-70 italic">शिल्लक (Carry Forward)</span>
+        <span>₹ {(previousRemaining || 0).toLocaleString()}</span>
+      </div>
+
+      <div className="pt-1">
+        <div className="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden">
+          <div
+            className="bg-teal-500 h-1.5 rounded-full"
+            style={{ width: `${Math.min(100, ((month.totalCollected || 0) / 100000) * 100)}%` }}
+          ></div>
+        </div>
       </div>
     </div>
   </div>
@@ -90,6 +116,7 @@ export default function DashboardPage() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [months, setMonths] = useState([]);
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [stats, setStats] = useState({
     totalMembers: 0,
     totalFund: 0,
@@ -115,31 +142,30 @@ export default function DashboardPage() {
         const userData = await authAPI.getMe();
         if (userData.success) {
           setUser(userData.data || userData);
-          await loadData();
-        } else {
-          await loadData();
         }
       } catch (e) {
         console.error("Auth check failed:", e);
-        await loadData();
       }
+      await loadData(selectedYear);
     };
     checkAuth();
-  }, []);
+  }, [selectedYear]);
 
-  const loadData = async () => {
+  const loadData = async (year = selectedYear) => {
     try {
-      const monthsRes = await monthsAPI.getAll();
+      setLoading(true);
+      const monthsRes = await monthsAPI.getAll({ year });
       if (monthsRes.success) {
-        const sortedMonths = monthsRes.data.sort((a, b) => new Date(b.date) - new Date(a.date));
+        const sortedMonths = monthsRes.data;
         setMonths(sortedMonths);
 
         const totalCol = sortedMonths.reduce((acc, m) => acc + (m.totalCollected || 0), 0);
         const totalLoans = sortedMonths.reduce((acc, m) => acc + (m.totalGiven || 0), 0);
+        const totalDep = sortedMonths.reduce((acc, m) => acc + (m.totalDeposits || 0), 0);
 
         setStats({
           totalMembers: 42,
-          totalFund: totalCol - totalLoans,
+          totalFund: totalCol + totalDep - totalLoans,
           monthlyCollection: sortedMonths[0]?.totalCollected || 0,
           pendingLoans: totalLoans
         });
@@ -147,28 +173,7 @@ export default function DashboardPage() {
     } catch (e) {
       console.error("Failed to load dashboard data", e);
     } finally {
-      // Small artificial delay to prevent flicker if data loads too fast, 
-      // but long enough to show smooth skeleton if needed.
       setTimeout(() => setLoading(false), 300);
-    }
-  };
-
-  const handleCreateMonth = () => {
-    const date = new Date();
-    const monthName = date.toLocaleString('default', { month: 'long' });
-    const year = date.getFullYear();
-    const exists = months.find(m => m.monthName === monthName && m.year === year);
-    if (exists) {
-      router.push(`/month/${exists.date}?name=${monthName}&year=${year}`);
-    } else {
-      monthsAPI.POST({ month: date.getMonth() + 1, year }).then(res => {
-        if (res.success) {
-          router.push(`/month/${res.data.date}?name=${monthName}&year=${year}`);
-        }
-      }).catch(err => {
-        const dateStr = date.toISOString().split('T')[0];
-        router.push(`/month/${dateStr}?name=${monthName}&year=${year}`);
-      });
     }
   };
 
@@ -357,38 +362,73 @@ export default function DashboardPage() {
 
         {/* Monthly Collections / History Section (RESTORED) */}
         <div>
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="font-bold text-lg text-gray-800">मासिक तपशील आणि इतिहास</h3>
-            <button onClick={handleCreateMonth} className="flex items-center gap-2 text-sm text-teal-600 font-medium hover:underline">
-              <PlusCircle size={14} /> नवीन महिना सुरू करा
-            </button>
+          <div className="flex justify-between items-center mb-6">
+            <h3 className="font-bold text-lg text-gray-800">मासिक तपशील ({selectedYear})</h3>
+            <div className="flex items-center gap-2 bg-white border border-gray-100 rounded-xl p-1 shadow-sm">
+              <select
+                value={selectedYear}
+                onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+                className="bg-transparent text-sm font-bold text-teal-600 px-3 py-1 outline-none cursor-pointer"
+              >
+                {YEARS.map(y => (
+                  <option key={y} value={y}>{y}</option>
+                ))}
+              </select>
+            </div>
           </div>
 
-          {months.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {months.map(month => (
-                <MonthCard
-                  key={month._id}
-                  month={month}
-                  onClick={() => router.push(`/month/${month.date}?name=${month.monthName}&year=${month.year}${month.status === 'completed' ? '&historical=true' : ''}`)}
-                />
-              ))}
-            </div>
-          ) : (
-            <div className="bg-white p-8 rounded-2xl border border-gray-100 text-center">
-              <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4 text-gray-400">
-                <FileText size={32} />
-              </div>
-              <h3 className="font-bold text-gray-800">कोणताही इतिहास आढळला नाही</h3>
-              <p className="text-gray-500 text-sm mt-1">येथे जमा तपशील पाहण्यासाठी नवीन महिना सुरू करा.</p>
-              <button
-                onClick={handleCreateMonth}
-                className="mt-4 px-4 py-2 bg-teal-600 text-white rounded-lg text-sm font-medium hover:bg-teal-700"
-              >
-                चालू महिना तयार करा
-              </button>
-            </div>
-          )}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {(() => {
+              let runningBalance = 0;
+              // Sort existing months by month number to calculate cumulative balance correctly
+              const existingMonths = [...months].sort((a, b) => a.month - b.month);
+
+              return MONTH_NAMES.map((name, index) => {
+                const monthNum = index + 1;
+                const monthData = existingMonths.find(m => m.month === monthNum);
+                const openingBalance = runningBalance;
+
+                if (monthData) {
+                  // Net for this month = Collections + Deposits - Loans
+                  const netThisMonth = (monthData.totalCollected || 0) + (monthData.totalDeposits || 0) - (monthData.totalGiven || 0);
+                  runningBalance += netThisMonth;
+
+                  return (
+                    <MonthCard
+                      key={`${selectedYear}-${monthNum}`}
+                      month={monthData}
+                      previousRemaining={openingBalance}
+                      onClick={() => router.push(`/month/${monthData.date}?name=${monthData.monthName}&year=${monthData.year}${monthData.status === 'completed' ? '&historical=true' : ''}`)}
+                    />
+                  );
+                }
+
+                // Card for unstarted month
+                return (
+                  <div
+                    key={`${selectedYear}-${monthNum}`}
+                    onClick={() => {
+                      monthsAPI.create({ month: monthNum, year: selectedYear }).then(res => {
+                        if (res.success) {
+                          router.push(`/month/${res.data.date}?name=${name}&year=${selectedYear}`);
+                        }
+                      });
+                    }}
+                    className="bg-gray-50/50 p-5 rounded-2xl border border-dashed border-gray-200 hover:border-teal-300 hover:bg-teal-50/30 transition-all cursor-pointer group flex flex-col justify-center items-center py-8"
+                  >
+                    <div className="p-2.5 bg-white rounded-xl text-gray-400 group-hover:text-teal-500 shadow-sm transition-colors mb-2">
+                      <PlusCircle size={20} />
+                    </div>
+                    <h4 className="font-bold text-gray-400 group-hover:text-teal-600">{name}</h4>
+                    {openingBalance > 0 && (
+                      <p className="text-[10px] text-teal-500/70 italic mt-0.5">₹ {openingBalance.toLocaleString()} शिल्लक</p>
+                    )}
+                    <p className="text-[10px] text-gray-400 uppercase font-bold mt-1">सुरू करा</p>
+                  </div>
+                );
+              });
+            })()}
+          </div>
         </div>
 
         {/* Recent Transactions / Members */}

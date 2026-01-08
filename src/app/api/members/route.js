@@ -75,12 +75,14 @@ export async function POST(request) {
     const body = await request.json();
 
     // Auto-generate serial number
-    const lastMember = await Member.findOne().sort({ serialNo: -1 });
+    const lastMember = await Member.findOne({ serialNo: { $regex: /^MBR\d+$/ } }).sort({ serialNo: -1 });
     let serialNo = 'MBR001';
 
     if (lastMember && lastMember.serialNo) {
       const lastNum = parseInt(lastMember.serialNo.replace('MBR', ''));
-      serialNo = `MBR${String(lastNum + 1).padStart(3, '0')}`;
+      if (!isNaN(lastNum)) {
+        serialNo = `MBR${String(lastNum + 1).padStart(3, '0')}`;
+      }
     }
 
     const member = await Member.create({

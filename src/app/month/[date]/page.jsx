@@ -176,6 +176,7 @@ export default function MonthDetailsPage() {
         currentPrincipalWithLoans: member.currentPrincipal || 0,
         newPrincipal: existingPayment.principalAfter || member.currentPrincipal || 0,
         total: existingPayment.calculatedTotal || existingPayment.paidAmount || 0,
+        pendingShares: member.pendingShares || 0, // Should be 0 if already paid or based on history
         totalBorrowedThisMonth: getTotalBorrowingThisMonth(memberId),
         principalBeforePayment: existingPayment.principalBefore || 0,
         status: 'Paid'
@@ -183,6 +184,7 @@ export default function MonthDetailsPage() {
     }
 
     if (!member.isBorrower && getTotalBorrowingThisMonth(memberId) === 0) {
+      const pendingShares = member.pendingShares || 0
       return {
         shareAmount: currentShareAmount,
         muddalPaid: 0,
@@ -191,7 +193,8 @@ export default function MonthDetailsPage() {
         principalBeforeLoans: 0,
         currentPrincipalWithLoans: 0,
         newPrincipal: 0,
-        total: currentShareAmount,
+        total: currentShareAmount + pendingShares,
+        pendingShares,
         totalBorrowedThisMonth: 0,
         principalBeforePayment: 0,
         status: 'Pending'
@@ -208,7 +211,8 @@ export default function MonthDetailsPage() {
     const interestOnNewLoan = Math.ceil(totalBorrowedThisMonth * (INTEREST_RATE / 100));
 
     const interestAmount = interestOnPrincipal + interestOnNewLoan
-    const total = currentShareAmount + muddalPaid + interestAmount
+    const pendingShares = member.pendingShares || 0
+    const total = currentShareAmount + muddalPaid + interestAmount + pendingShares
 
     const newPrincipal = remainingOldPrincipal + totalBorrowedThisMonth;
 
@@ -221,6 +225,7 @@ export default function MonthDetailsPage() {
       currentPrincipalWithLoans: currentPrincipalIncludingNewParams,
       newPrincipal: newPrincipal,
       total,
+      pendingShares,
       totalBorrowedThisMonth,
       principalBeforePayment: currentPrincipalIncludingNewParams,
       status: 'Pending'
@@ -310,6 +315,7 @@ export default function MonthDetailsPage() {
               <th width="5%">सभा. क्र</th>
               <th width="15%">भागधारकाचे नाव</th>
               <th width="6%">भाग रक्कम</th>
+              <th width="6%">बाकी</th>
               <th width="8%">कर्ज</th>
               <th width="8%">मुद्दल</th>
               <th width="8%">व्याज</th>
@@ -343,6 +349,7 @@ export default function MonthDetailsPage() {
                     <div style="font-size: 8px; color: #64748b;">${member.phone}</div>
                   </td>
                   <td>₹${paymentDetails.shareAmount.toLocaleString()}</td>
+                  <td style="${paymentDetails.pendingShares > 0 ? 'color: red; font-weight: bold;' : ''}">${paymentDetails.pendingShares > 0 ? `₹${paymentDetails.pendingShares.toLocaleString()}` : '-'}</td>
                   <td>${member.isBorrower || paymentDetails.totalBorrowedThisMonth > 0 ? `₹${paymentDetails.principalBeforeLoans.toLocaleString()}` : '-'}</td>
                   <td>${muddalPaid > 0 ? `₹${muddalPaid.toLocaleString()}` : (isPaid ? '0' : '0')}</td>
                   <td>${member.isBorrower || paymentDetails.totalBorrowedThisMonth > 0 ? `₹${paymentDetails.interestAmount.toLocaleString()}` : '-'}</td>

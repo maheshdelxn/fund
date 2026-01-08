@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import connectDB from '@/lib/db';
 import MonthlyData from '@/models/MonthlyData';
+import Deposit from '@/models/Deposit';
 import { authenticate } from '@/lib/auth';
 
 // GET /api/months - Get all monthly data
@@ -77,17 +78,45 @@ export async function GET(request) {
             as: 'borrowingStats'
           }
         },
+        // Lookup Deposits to calculate Total Deposits (Capital)
+        {
+          $lookup: {
+            from: 'deposits',
+            let: { month: '$month', year: '$year' },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $and: [
+                      { $eq: [{ $month: '$date' }, '$$month'] },
+                      { $eq: [{ $year: '$date' }, '$$year'] },
+                      { $eq: ['$status', 'confirmed'] }
+                    ]
+                  }
+                }
+              },
+              {
+                $group: {
+                  _id: null,
+                  totalDeposits: { $sum: '$amount' }
+                }
+              }
+            ],
+            as: 'depositStats'
+          }
+        },
         // Shape the output, merging stored fields with calculated stats
         {
           $addFields: {
             totalCollected: { $ifNull: [{ $arrayElemAt: ['$paymentStats.totalCollected', 0] }, 0] },
             paidMembers: { $ifNull: [{ $arrayElemAt: ['$paymentStats.count', 0] }, 0] },
-            totalGiven: { $ifNull: [{ $arrayElemAt: ['$borrowingStats.totalGiven', 0] }, 0] }
+            totalGiven: { $ifNull: [{ $arrayElemAt: ['$borrowingStats.totalGiven', 0] }, 0] },
+            totalDeposits: { $ifNull: [{ $arrayElemAt: ['$depositStats.totalDeposits', 0] }, 0] }
           }
         },
         {
           $addFields: {
-            remainingAmount: { $subtract: ['$totalCollected', '$totalGiven'] }
+            remainingAmount: { $subtract: [{ $add: ['$totalCollected', '$totalDeposits'] }, '$totalGiven'] }
           }
         },
         { $sort: { year: -1, month: -1 } },

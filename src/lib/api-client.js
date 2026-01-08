@@ -27,7 +27,7 @@ export const removeToken = () => {
 // Base fetch wrapper
 const apiFetch = async (endpoint, options = {}) => {
   const token = getToken();
-  
+
   const config = {
     ...options,
     headers: {
@@ -54,29 +54,29 @@ const apiFetch = async (endpoint, options = {}) => {
 
 // Authentication API
 export const authAPI = {
-  login: async (email, password) => {
+  login: async ({ email, password }) => {
     const data = await apiFetch('/auth/login', {
       method: 'POST',
       body: JSON.stringify({ email, password }),
     });
-    
+
     if (data.success && data.data.token) {
       setToken(data.data.token);
     }
-    
+
     return data;
   },
 
-  register: async (name, email, password) => {
+  register: async ({ name, email, password }) => {
     const data = await apiFetch('/auth/register', {
       method: 'POST',
       body: JSON.stringify({ name, email, password }),
     });
-    
+
     if (data.success && data.data.token) {
       setToken(data.data.token);
     }
-    
+
     return data;
   },
 
